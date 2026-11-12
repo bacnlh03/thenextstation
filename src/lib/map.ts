@@ -1,6 +1,6 @@
 export const DEFAULT_VENUE = {
-  lat: 10.8775838,
-  lng: 106.8011814,
+  lat: 10.8688938,
+  lng: 106.795767,
 }
 
 export interface MapLocation {
@@ -44,7 +44,6 @@ export function hasMapLocation(
 ) {
   if (el.mapLat != null && el.mapLng != null && el.mapLat !== '' && el.mapLng !== '') return true
   if (el.mapQuery?.trim()) return true
-  if (el.id === 'details_block' && el.content?.includes('\n')) return true
   return false
 }
 
@@ -53,9 +52,6 @@ export function getElementMapLocation(
 ): Pick<MapLocation, 'lat' | 'lng' | 'query'> {
   if (el.mapLat != null && el.mapLng != null && el.mapLat !== '' && el.mapLng !== '') {
     return { lat: el.mapLat, lng: el.mapLng }
-  }
-  if (el.id === 'details_block') {
-    return { lat: DEFAULT_VENUE.lat, lng: DEFAULT_VENUE.lng }
   }
   const query = el.mapQuery?.trim()
   return query ? { query } : {}
