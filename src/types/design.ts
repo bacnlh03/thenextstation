@@ -23,8 +23,8 @@ export interface DesignElement {
   label?: string
   // When set, clicking this element opens a map (invitation view only)
   mapQuery?: string
-  mapLat?: number
-  mapLng?: number
+  mapLat?: number | string
+  mapLng?: number | string
 }
 
 export interface DesignConfig {
@@ -170,9 +170,9 @@ export const DEFAULT_CONFIG: DesignConfig = {
     {
         id: 'details_block',
         type: 'text',
-        content: '08:00 • 28.11.2026\nĐại học Quốc tế (IU)',
-        mapLat: 10.8775838,
-        mapLng: 106.8011814,
+        content: '16:00 • 28.11.2026\nHội trường Trần Chí Đáo',
+        mapLat: 10.8688938,
+        mapLng: 106.795767,
         x: 50,
         y: 450,
         style: { 

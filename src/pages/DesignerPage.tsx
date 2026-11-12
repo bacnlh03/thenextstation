@@ -545,24 +545,32 @@ export function DesignerPage() {
                                                         <label className="block text-[10px] text-slate-400 font-bold uppercase mb-1">Tọa độ bản đồ (tùy chọn)</label>
                                                         <div className="grid grid-cols-2 gap-2">
                                                             <input
-                                                                type="number"
-                                                                step="any"
+                                                                type="text"
+                                                                inputMode="decimal"
                                                                 className="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                                                                placeholder="Lat"
+                                                                placeholder="Lat (VD: 10.86889)"
                                                                 value={el.mapLat ?? ''}
-                                                                onChange={(e) => updateElement(el.id, {
-                                                                    mapLat: e.target.value ? parseFloat(e.target.value) : undefined,
-                                                                })}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value.replace(',', '.')
+                                                                    // Allow typing digits, dot, and leading minus
+                                                                    if (val === '' || /^-?\d*\.?\d*$/.test(val)) {
+                                                                        updateElement(el.id, { mapLat: val === '' ? undefined : val })
+                                                                    }
+                                                                }}
                                                             />
                                                             <input
-                                                                type="number"
-                                                                step="any"
+                                                                type="text"
+                                                                inputMode="decimal"
                                                                 className="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                                                                placeholder="Lng"
+                                                                placeholder="Lng (VD: 106.80118)"
                                                                 value={el.mapLng ?? ''}
-                                                                onChange={(e) => updateElement(el.id, {
-                                                                    mapLng: e.target.value ? parseFloat(e.target.value) : undefined,
-                                                                })}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value.replace(',', '.')
+                                                                    // Allow typing digits, dot, and leading minus
+                                                                    if (val === '' || /^-?\d*\.?\d*$/.test(val)) {
+                                                                        updateElement(el.id, { mapLng: val === '' ? undefined : val })
+                                                                    }
+                                                                }}
                                                             />
                                                         </div>
                                                         <p className="text-[10px] text-slate-400 mt-1">Khách mời có thể bấm vào địa chỉ để xem bản đồ</p>
@@ -824,7 +832,7 @@ export function DesignerPage() {
                         onClick={(e) => e.stopPropagation()}
                         onMouseDown={(e) => handleMouseDown(e, el.id, el.x, el.y)}
                         className={clsx(
-                            "absolute cursor-move select-none hover:ring-1 hover:ring-blue-400",
+                            "absolute cursor-move select-none whitespace-pre-wrap hover:ring-1 hover:ring-blue-400",
                             selectedElementId === el.id && "ring-2 ring-blue-600 z-50",
                             el.type === 'button' && "flex items-center justify-center font-bold shadow-lg rounded-xl"
                         )}

@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, type ReactNode } from 'react'
 import confetti from 'canvas-confetti'
+import { Volume2, VolumeX } from 'lucide-react'
 import { useGuestStore } from '@/stores/useGuestStore'
-import { useDesignStore, normalizeUrl } from '@/stores/useDesignStore'
+import { useDesignStore } from '@/stores/useDesignStore'
 import { InvitationRenderer } from '@/components/InvitationRenderer'
 import { useSearchParams } from 'react-router-dom'
 import clsx from 'clsx'
@@ -18,7 +19,8 @@ export function InvitationPage() {
   
   const [guestName, setGuestName] = useState('Bạn của Ngọc Trâm')
   const [isConfirmed, setIsConfirmed] = useState<number>(0)
-  const [isVisible, setIsVisible] = useState(false) // For entry animation
+  const [isVisible, setIsVisible] = useState(false)
+  const [isOpened, setIsOpened] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   
@@ -32,8 +34,7 @@ export function InvitationPage() {
           setIsConfirmed(guest.status)
         }
       }
-      // Trigger entry animation
-      setTimeout(() => setIsVisible(true), 300)
+      setTimeout(() => setIsVisible(true), 180)
     }
     init()
   }, [guestId, getGuestById, fetchConfig])
@@ -45,7 +46,6 @@ export function InvitationPage() {
     }
   }, [config.music])
 
-
   const startMusic = () => {
     if (config.music?.enabled && audioRef.current && !isPlaying) {
       const start = config.music.startTime || 0
@@ -55,7 +55,6 @@ export function InvitationPage() {
       audioRef.current.play().catch(e => console.error("Auto-play failed", e))
       setIsPlaying(true)
 
-      // Range enforcement
       const handleTimeUpdate = () => {
         if (!audioRef.current) return
         if (end > 0 && audioRef.current.currentTime >= end) {
@@ -72,93 +71,114 @@ export function InvitationPage() {
     }
   }
 
+  const toggleMusic = () => {
+    const audio = audioRef.current
+    if (!audio) return
+    if (isPlaying) {
+      audio.pause()
+      setIsPlaying(false)
+      return
+    }
+    audio.play().catch(e => console.error("Auto-play failed", e))
+    setIsPlaying(true)
+  }
+
+  const handleOpen = () => {
+    setIsOpened(true)
+    startMusic()
+  }
+
   const handleConfirm = async () => {
     if (isConfirmed === 2) return
     if (guestId) {
        await confirmAttendance(guestId)
     }
-    setIsConfirmed(2) // StatusConfirmed
-    // Soft, Elegant Celebration (Rose Gold & Champagne)
+    setIsConfirmed(2)
     confetti({ 
-      particleCount: 100, 
+      particleCount: 90, 
       spread: 70, 
-      origin: { y: 0.6 }, 
-      colors: ['#e2e8f0', '#fecdd3', '#fde68a'], 
-      scalar: 0.8,
-      drift: 0.5,
-      gravity: 0.8
+      origin: { y: 0.62 }, 
+      colors: ['#fef3c7', '#fcd34d', '#fbbf24', '#fffbeb'], 
+      scalar: 0.75,
+      gravity: 0.85
     })
   }
 
+  const hasMusic = Boolean(config.music?.enabled && config.music.url)
+
   return (
     <div 
-      className="min-h-screen w-full font-serif overflow-hidden relative flex items-center justify-center p-4 selection:bg-rose-200"
+      className="min-h-screen w-full relative flex items-center justify-center px-4 py-8 selection:bg-[#fcd34d]/30 selection:text-[#1e1b4b]"
       style={{
-          // Luxury Pastel Gradient
-          background: 'radial-gradient(circle at 50% 0%, #fff1f2 0%, #fff7ed 40%, #fdf2f8 75%, #fce7f3 100%)',
+          background: 'radial-gradient(ellipse at 50% 18%, #2a2458 0%, #16132e 42%, #0b0918 100%)',
       }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400&family=Dancing+Script:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Roboto:wght@300;400;500;700&family=Great+Vibes&family=Montserrat:wght@300;400;500;700&family=Pacifico&family=Quicksand:wght@300;400;500;700&family=Charm:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Oswald:wght@200;400;700&family=Saira+Stencil+One&family=Open+Sans:ital,wght@0,300;0,400;0,700;1,400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Pacifico&family=Quicksand:wght@300;400;500;700&family=Charm:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Oswald:wght@200;400;700&family=Roboto:wght@300;400;500;700&family=Open+Sans:ital,wght@0,300;0,400;0,700;1,400&family=Saira+Stencil+One&display=swap');
         .font-luxury-serif { font-family: 'Playfair Display', serif; }
         .font-luxury-sans { font-family: 'Montserrat', sans-serif; }
-        
-        .glass-card {
-            background: rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 
-                0 20px 50px -12px rgba(167, 139, 250, 0.1), 
-                0 0 0 1px rgba(255,255,255,0.5) inset;
+
+        .night-stars {
+          background-image:
+            radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.75) 50%, transparent 52%),
+            radial-gradient(1px 1px at 28% 72%, rgba(255,255,255,0.45) 50%, transparent 52%),
+            radial-gradient(1.5px 1.5px at 72% 22%, rgba(252,211,77,0.85) 50%, transparent 52%),
+            radial-gradient(1px 1px at 84% 64%, rgba(255,255,255,0.55) 50%, transparent 52%),
+            radial-gradient(1px 1px at 46% 40%, rgba(255,255,255,0.35) 50%, transparent 52%),
+            radial-gradient(1px 1px at 63% 84%, rgba(252,211,77,0.5) 50%, transparent 52%),
+            radial-gradient(1px 1px at 8% 88%, rgba(255,255,255,0.4) 50%, transparent 52%);
         }
-        
+
         @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(30px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            from { opacity: 0; transform: translateY(22px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        
         .animate-enter {
-            animation: fadeUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
       `}</style>
-      
-      {/* Abstract Ambient Shapes (Blur blobs) */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-rose-200/40 rounded-full blur-[120px] pointer-events-none mix-blend-multiply animate-pulse" style={{ animationDuration: '8s' }} />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-amber-100/60 rounded-full blur-[100px] pointer-events-none mix-blend-multiply" />
-      <div className="absolute top-[20%] right-[20%] w-[30vh] h-[30vh] bg-pink-300/20 rounded-full blur-[80px] pointer-events-none" />
 
-      {/* Main Card Container */}
+      <div className="night-stars absolute inset-0 pointer-events-none" />
+      <div className="absolute top-[-18%] left-1/2 -translate-x-1/2 w-[70vw] h-[40vw] bg-[#fcd34d]/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(6,5,16,0.72)_100%)]" />
+
       <div 
           className={clsx(
-              "relative z-10 transition-all duration-1000",
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+              "relative z-10 flex flex-col items-center",
+              isVisible ? "animate-enter" : "opacity-0"
           )}
       >
-          <div className="glass-card rounded-[2rem] p-8 md:p-12 relative overflow-hidden">
-             
-             {/* Subtle internal border/frame */}
-             <div className="absolute inset-4 border border-rose-900/10 rounded-[1.5rem] pointer-events-none"></div>
+          <InvitationWrapper 
+              config={config} 
+              guest={{ 
+                  id: guestId || 'demo', 
+                  full_name: guestName, 
+                  status: isConfirmed, 
+                  updated_at: '' 
+              }} 
+              isConfirmed={isConfirmed === 2}
+              onConfirm={handleConfirm}
+              onOpen={handleOpen}
+          />
 
-             <InvitationWrapper 
-                  config={config} 
-                  guest={{ 
-                      id: guestId || 'demo', 
-                      full_name: guestName, 
-                      status: isConfirmed, 
-                      updated_at: '' 
-                  }} 
-                  isConfirmed={isConfirmed === 2}
-                  onConfirm={handleConfirm}
-                  onOpen={startMusic}
-             />
-
-             {/* Footer tagline */}
-             <div className="text-center mt-6 text-rose-900/40 text-xs font-luxury-sans tracking-[0.2em] uppercase">
-                 Trân trọng kính mời
-             </div>
-          </div>
+          {/* <p className={clsx(
+            "mt-5 font-luxury-sans text-[10px] tracking-[0.32em] uppercase text-[#fcd34d]/55 transition-opacity duration-700",
+            isOpened ? "opacity-100" : "opacity-0"
+          )}>
+            Chạm địa điểm để xem bản đồ
+          </p> */}
       </div>
+
+      {hasMusic && isOpened && (
+        <button
+          type="button"
+          onClick={toggleMusic}
+          aria-label={isPlaying ? 'Tắt nhạc' : 'Bật nhạc'}
+          className="fixed bottom-5 right-5 z-30 h-11 w-11 rounded-full border border-[#fcd34d]/40 bg-[#14122c]/80 text-[#fcd34d] backdrop-blur-md flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.35)] hover:bg-[#fcd34d]/15 transition-colors"
+        >
+          {isPlaying ? <Volume2 size={18} /> : <VolumeX size={18} />}
+        </button>
+      )}
     </div>
   )
 }
@@ -175,23 +195,13 @@ function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen }: {
 
     useEffect(() => {
         const updateScale = () => {
-            if (containerRef.current) {
-                // Calculate available space in the window minus padding
-                const viewportWidth = window.innerWidth - 64 // 32px padding on each side
-                const viewportHeight = window.innerHeight - 150 // Vertical padding + footer
-                
-                // Determine scale based on width OR height to ensure it always fits
-                const scaleX = viewportWidth / config.width
-                const scaleY = viewportHeight / config.height
-                
-                // Use the smaller scale to fit entirely, but cap at 1.0 (don't upscale pixelated)
-                // Actually for vector text upscaling is fine, but for images it might blur.
-                // Let's allow max 1.1 for slight "zoom" feel on large screens, but mostly contain.
-                let targetScale = Math.min(scaleX, scaleY)
-                if (targetScale > 1.2) targetScale = 1.2
-                
-                setScale(targetScale)
-            }
+            const frame = 28
+            const viewportWidth = window.innerWidth - 32 - frame
+            const viewportHeight = window.innerHeight - 120 - frame
+            const scaleX = viewportWidth / config.width
+            const scaleY = viewportHeight / config.height
+            const targetScale = Math.min(scaleX, scaleY, 1)
+            setScale(targetScale > 0 ? targetScale : 1)
         }
         updateScale()
         window.addEventListener('resize', updateScale)
@@ -202,29 +212,50 @@ function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen }: {
         }
     }, [config.width, config.height])
 
+    const width = config.width * scale
+    const height = config.height * scale
+
     return (
-        <div ref={containerRef} className="flex justify-center items-center relative z-20">
-             <div 
-                className="relative shadow-2xl rounded-[2px]" 
-                style={{ 
-                    width: config.width * scale, 
-                    height: config.height * scale,
-                    transition: 'width 0.3s ease, height 0.3s ease'
+        <div ref={containerRef} className="flex justify-center items-center">
+             <div
+                className="relative p-px"
+                style={{
+                  width: width + 18,
+                  height: height + 18,
+                  background: 'linear-gradient(160deg, rgba(253,230,138,0.95), rgba(180,83,9,0.55) 38%, rgba(252,211,77,0.9) 68%, rgba(120,53,15,0.7))',
+                  boxShadow: '0 28px 70px rgba(0,0,0,0.48), 0 0 48px rgba(252,211,77,0.14)',
                 }}
              >
-                <InvitationRenderer 
-                    config={config} 
-                    guest={guest} 
-                    isConfirmed={isConfirmed}
-                    onConfirm={onConfirm}
-                    scale={scale}
-                />
-
-                {/* --- Book Cover Overlay --- */}
-                <BookCoverReveal scale={scale} onOpen={onOpen} />
+                <div className="absolute inset-[7px] border border-[#fcd34d]/25 pointer-events-none z-30" />
+                <CornerMarks />
+                <div
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                  style={{ width, height }}
+                >
+                  <InvitationRenderer 
+                      config={config} 
+                      guest={guest} 
+                      isConfirmed={isConfirmed}
+                      onConfirm={onConfirm}
+                      scale={scale}
+                  />
+                  <BookCoverReveal scale={scale} onOpen={onOpen} />
+                </div>
              </div>
         </div>
     )
+}
+
+function CornerMarks() {
+  const mark = "absolute w-3.5 h-3.5 border-[#fef3c7]/80 z-30 pointer-events-none"
+  return (
+    <>
+      <span className={clsx(mark, "top-1.5 left-1.5 border-t border-l")} />
+      <span className={clsx(mark, "top-1.5 right-1.5 border-t border-r")} />
+      <span className={clsx(mark, "bottom-1.5 left-1.5 border-b border-l")} />
+      <span className={clsx(mark, "bottom-1.5 right-1.5 border-b border-r")} />
+    </>
+  )
 }
 
 function BookCoverReveal({ scale, onOpen }: { scale: number, onOpen: () => void }) {
@@ -232,6 +263,7 @@ function BookCoverReveal({ scale, onOpen }: { scale: number, onOpen: () => void 
     const [isHovered, setIsHovered] = useState(false)
 
     const handleOpen = () => {
+        if (isOpened) return
         setIsOpened(true)
         onOpen()
     }
@@ -239,89 +271,25 @@ function BookCoverReveal({ scale, onOpen }: { scale: number, onOpen: () => void 
     return (
         <div 
             className={clsx(
-                "absolute inset-0 z-50 flex items-center justify-center cursor-pointer perspective-[1500px]",
+                "absolute inset-0 z-50 flex items-center justify-center [perspective:1600px]",
                 isOpened ? "pointer-events-none" : "pointer-events-auto"
             )}
             onClick={handleOpen}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
-            {/* --- Left Cover Panel --- */}
-            <div 
-                className={clsx(
-                    "absolute left-0 top-0 bottom-0 w-[50%] z-20 origin-left transition-all duration-[1500ms] ease-in-out border-r border-[#3e3b6b]",
-                    isOpened ? "-rotate-y-[110deg] opacity-0" : "rotate-y-0 opacity-100"
-                )}
-                style={{ 
-                    backgroundColor: '#1e1b4b', // Midnight Blue
-                    backgroundImage: `
-                        linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 100%), 
-                        url("https://www.transparenttextures.com/patterns/leather.png")
-                    `,
-                    backgroundBlendMode: 'overlay, multiply',
-                    boxShadow: 'inset -5px 0 15px rgba(0,0,0,0.5)',
-                    transformStyle: 'preserve-3d'
-                }}
-            >
-                {/* Gold Foil Wave Pattern (Top Left) */}
-                <div className="absolute top-0 left-0 w-full h-1/2 opacity-30 pointer-events-none"
-                    style={{
-                        background: `radial-gradient(circle at 0% 0%, transparent 20%, #bf953f 21%, transparent 22%),
-                                     radial-gradient(circle at 0% 0%, transparent 30%, #bf953f 31%, transparent 32%)`
-                    }}
-                />
-                
-                {/* Sagittarius Image */}
-                <img 
-                    src={normalizeUrl("/sagittarius.png")} 
-                    alt="Sagittarius" 
-                    className="absolute inset-0 w-full h-full object-cover opacity-60 pointer-events-none"
-                    style={{ mixBlendMode: 'luminosity' }}
-                />
-            </div>
+            <CoverPanel side="left" opened={isOpened}>
+              <ConstellationMark />
+            </CoverPanel>
+            <CoverPanel side="right" opened={isOpened}>
+              <GraduationMark />
+            </CoverPanel>
 
-            {/* --- Right Cover Panel --- */}
-            <div 
-                className={clsx(
-                    "absolute right-0 top-0 bottom-0 w-[50%] z-20 origin-right transition-all duration-[1500ms] ease-in-out border-l border-[#3e3b6b]",
-                    isOpened ? "rotate-y-[110deg] opacity-0" : "rotate-y-0 opacity-100"
-                )}
-                style={{ 
-                    backgroundColor: '#1e1b4b',
-                    backgroundImage: `
-                        linear-gradient(-135deg, rgba(255,255,255,0.03) 0%, transparent 100%), 
-                        url("https://www.transparenttextures.com/patterns/leather.png")
-                    `,
-                    backgroundBlendMode: 'overlay, multiply',
-                    boxShadow: 'inset 5px 0 15px rgba(0,0,0,0.5)',
-                    transformStyle: 'preserve-3d'
-                }}
-            >
-                {/* Gold Foil Wave Pattern (Bottom Right) */}
-                <div className="absolute bottom-0 right-0 w-full h-1/2 opacity-30 pointer-events-none"
-                    style={{
-                        background: `radial-gradient(circle at 100% 100%, transparent 20%, #bf953f 21%, transparent 22%),
-                                     radial-gradient(circle at 100% 100%, transparent 30%, #bf953f 31%, transparent 32%)`
-                    }}
-                />
-
-                {/* Graduation Image */}
-                <img 
-                    src={normalizeUrl("/graduation.png")} 
-                    alt="Graduation" 
-                    className="absolute inset-0 w-full h-full object-cover opacity-60 pointer-events-none"
-                    style={{ mixBlendMode: 'luminosity' }}
-                />
-            </div>
-
-            {/* --- Central Spine Shadow --- */}
             <div className={clsx(
-                "absolute inset-y-0 w-4 bg-black/40 blur-md z-30 transition-opacity duration-500",
+                "absolute inset-y-0 w-3 bg-black/50 blur-md z-30 transition-opacity duration-500",
                 isOpened ? "opacity-0" : "opacity-100"
             )} />
 
-            {/* --- The Planetary Seal Button (Center) --- */}
-            {/* FIXED: No Rotation, just fade out/scale */}
             <div 
                 className={clsx(
                     "absolute z-40 flex flex-col items-center justify-center transition-all duration-700",
@@ -329,34 +297,94 @@ function BookCoverReveal({ scale, onOpen }: { scale: number, onOpen: () => void 
                 )}
             >
                 <div className={clsx(
-                    "rounded-full flex items-center justify-center relative shadow-[0_10px_40px_rgba(0,0,0,0.6)]",
-                    isHovered ? "scale-105" : "scale-100", // Subtle hover only
-                    "transition-transform duration-500 ease-out"
+                    "rounded-full flex items-center justify-center relative shadow-[0_12px_36px_rgba(0,0,0,0.55)] transition-transform duration-500 ease-out",
+                    isHovered ? "scale-105" : "scale-100"
                 )}
                 style={{
-                    width: 100 * scale,
-                    height: 100 * scale,
-                    // Gold Foil Gradient
-                    background: 'conic-gradient(from 180deg, #b45309, #fcd34d, #b45309, #fcd34d, #b45309)',
-                    border: '2px solid rgba(255,255,255,0.2)'
+                    width: 92 * Math.max(scale, 0.72),
+                    height: 92 * Math.max(scale, 0.72),
+                    background: 'conic-gradient(from 180deg, #b45309, #fde68a, #b45309, #fcd34d, #b45309)',
                 }}>
-                    <div className="absolute inset-1 rounded-full bg-[#1e1b4b] flex items-center justify-center">
-                        {/* Inner Symbol: Compound Star/Compass */}
-                         <svg width="60%" height="60%" viewBox="0 0 24 24" stroke="#fcd34d" strokeWidth="1" fill="none">
-                            <circle cx="12" cy="12" r="8" strokeOpacity="0.5" />
-                            <path d="M12 2L14 10L22 12L14 14L12 22L10 14L2 12L10 10L12 2Z" fill="#fcd34d" fillOpacity="0.2" />
+                    <div className="absolute inset-[3px] rounded-full bg-[#16132e] flex items-center justify-center border border-[#fcd34d]/30">
+                         <svg width="58%" height="58%" viewBox="0 0 24 24" stroke="#fcd34d" strokeWidth="1" fill="none">
+                            <circle cx="12" cy="12" r="8" strokeOpacity="0.45" />
+                            <path d="M12 2L14 10L22 12L14 14L12 22L10 14L2 12L10 10L12 2Z" fill="#fcd34d" fillOpacity="0.22" />
                             <circle cx="12" cy="12" r="2" fill="#fcd34d" />
                          </svg>
                     </div>
                 </div>
                 
-                {/* <span className={clsx(
-                    "mt-4 font-luxury-sans text-[#fcd34d] text-[10px] tracking-[0.3em] uppercase transition-opacity duration-300",
-                    isHovered ? "opacity-100" : "opacity-60"
+                <span className={clsx(
+                    "mt-3 font-luxury-sans text-[#fcd34d] text-[10px] tracking-[0.32em] uppercase transition-opacity duration-300",
+                    isHovered ? "opacity-100" : "opacity-70"
                 )}>
-                    Mở Thiệp
-                </span> */}
+                    Mở thiệp
+                </span>
             </div>
         </div>
     )
+}
+
+function CoverPanel({
+  side,
+  opened,
+  children,
+}: {
+  side: 'left' | 'right'
+  opened: boolean
+  children: ReactNode
+}) {
+  const isLeft = side === 'left'
+  return (
+    <div
+      className={clsx(
+        "absolute top-0 bottom-0 w-1/2 z-20 transition-all duration-[1400ms] ease-[cubic-bezier(0.7,0,0.2,1)] overflow-hidden",
+        isLeft ? "left-0 origin-left border-r border-[#fcd34d]/20" : "right-0 origin-right border-l border-[#fcd34d]/20",
+        opened
+          ? (isLeft ? "-rotate-y-[105deg] opacity-0" : "rotate-y-[105deg] opacity-0")
+          : "rotate-y-0 opacity-100"
+      )}
+      style={{
+        backgroundColor: '#14122c',
+        backgroundImage: isLeft
+          ? 'radial-gradient(circle at 0% 0%, rgba(252,211,77,0.18), transparent 46%)'
+          : 'radial-gradient(circle at 100% 100%, rgba(252,211,77,0.16), transparent 48%)',
+        boxShadow: isLeft ? 'inset -10px 0 18px rgba(0,0,0,0.35)' : 'inset 10px 0 18px rgba(0,0,0,0.35)',
+        transformStyle: 'preserve-3d',
+      }}
+    >
+      <div className="absolute inset-3 border border-[#fcd34d]/15 pointer-events-none" />
+      {children}
+    </div>
+  )
+}
+
+function ConstellationMark() {
+  return (
+    <svg viewBox="0 0 200 320" className="absolute inset-0 w-full h-full p-6 text-[#fcd34d]" aria-hidden>
+      <g fill="currentColor" stroke="currentColor" strokeWidth="0.6" opacity="0.85">
+        <circle cx="48" cy="70" r="2.2" />
+        <circle cx="92" cy="108" r="2.4" />
+        <circle cx="70" cy="156" r="2" />
+        <circle cx="118" cy="188" r="2.6" />
+        <circle cx="86" cy="230" r="2" />
+        <circle cx="140" cy="248" r="1.8" />
+        <path d="M48 70 L92 108 L70 156 L118 188 L86 230 L140 248" fill="none" strokeOpacity="0.55" />
+        <path d="M92 108 L118 188" fill="none" strokeOpacity="0.35" />
+      </g>
+    </svg>
+  )
+}
+
+function GraduationMark() {
+  return (
+    <svg viewBox="0 0 200 320" className="absolute inset-0 m-auto w-[58%] h-[58%] text-[#fcd34d]" aria-hidden>
+      <g fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" strokeLinecap="round" opacity="0.9">
+        <path d="M20 118 L100 78 L180 118 L100 158 Z" fill="currentColor" fillOpacity="0.12" />
+        <path d="M52 132 V176 C52 176 72 196 100 196 C128 196 148 176 148 176 V132" />
+        <path d="M180 118 V168" />
+        <circle cx="180" cy="176" r="5" fill="currentColor" />
+      </g>
+    </svg>
+  )
 }

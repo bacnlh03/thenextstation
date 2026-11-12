@@ -27,7 +27,7 @@ const renderContent = (el: DesignElement, guest?: Guest | null, isConfirmed?: bo
     return guest?.full_name || 'Tên Khách Mời'
   }
   if (el.type === 'button') {
-     return isConfirmed ? 'Đã xác nhận tham dự' : (el.content || 'Xác nhận tham dự')
+     return isConfirmed ? 'Đã xác nhận' : (el.content || 'Xác nhận tham dự')
   }
   return el.content
 }
@@ -156,8 +156,8 @@ export function InvitationRenderer({ config, guest, onElementClick, selectedId, 
                           }
                       }}
                       className={clsx(
-                          "absolute transition-all flex items-center justify-center font-bold shadow-lg rounded-xl px-4 py-2 text-center",
-                          onElementClick ? "cursor-move" : (isConfirmed ? "cursor-default border-2 border-emerald-200" : "cursor-pointer active:scale-95"),
+                          "absolute transition-all flex items-center justify-center font-bold text-center",
+                          onElementClick ? "cursor-move" : (isConfirmed ? "cursor-default" : "cursor-pointer active:scale-[0.97]"),
                           isSelected && "ring-2 ring-blue-600 z-50"
                       )}
                       style={{
@@ -166,8 +166,10 @@ export function InvitationRenderer({ config, guest, onElementClick, selectedId, 
                           width: el.width,
                           height: el.height,
                           ...el.style,
-                          backgroundColor: isConfirmed ? '#ecfdf5' : (el.style.backgroundColor || '#064e3b'),
-                          color: isConfirmed ? '#047857' : (el.style.color || '#ffffff'),
+                          backgroundColor: isConfirmed ? 'rgba(252, 211, 77, 0.12)' : (el.style.backgroundColor || '#064e3b'),
+                          color: isConfirmed ? '#fcd34d' : (el.style.color || '#ffffff'),
+                          boxShadow: isConfirmed ? 'none' : el.style.boxShadow,
+                          border: isConfirmed ? '1.5px solid rgba(252, 211, 77, 0.75)' : el.style.border,
                           transform: `rotate(${el.rotation || 0}deg)`
                       }}
                   >

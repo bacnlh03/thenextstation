@@ -4,15 +4,19 @@ export const DEFAULT_VENUE = {
 }
 
 export interface MapLocation {
-  lat?: number
-  lng?: number
+  lat?: number | string
+  lng?: number | string
   query?: string
   label: string
 }
 
 export function resolveMapCoords(location: Pick<MapLocation, 'lat' | 'lng' | 'query'>) {
   if (location.lat != null && location.lng != null) {
-    return { lat: location.lat, lng: location.lng }
+    const lat = typeof location.lat === 'number' ? location.lat : parseFloat(String(location.lat))
+    const lng = typeof location.lng === 'number' ? location.lng : parseFloat(String(location.lng))
+    if (!isNaN(lat) && !isNaN(lng)) {
+      return { lat, lng }
+    }
   }
   return null
 }
@@ -36,18 +40,18 @@ export function getOpenMapUrl(location: Pick<MapLocation, 'lat' | 'lng' | 'query
 }
 
 export function hasMapLocation(
-  el: { mapLat?: number; mapLng?: number; mapQuery?: string; id?: string; content?: string }
+  el: { mapLat?: number | string; mapLng?: number | string; mapQuery?: string; id?: string; content?: string }
 ) {
-  if (el.mapLat != null && el.mapLng != null) return true
+  if (el.mapLat != null && el.mapLng != null && el.mapLat !== '' && el.mapLng !== '') return true
   if (el.mapQuery?.trim()) return true
   if (el.id === 'details_block' && el.content?.includes('\n')) return true
   return false
 }
 
 export function getElementMapLocation(
-  el: { mapLat?: number; mapLng?: number; mapQuery?: string; id?: string; content?: string }
+  el: { mapLat?: number | string; mapLng?: number | string; mapQuery?: string; id?: string; content?: string }
 ): Pick<MapLocation, 'lat' | 'lng' | 'query'> {
-  if (el.mapLat != null && el.mapLng != null) {
+  if (el.mapLat != null && el.mapLng != null && el.mapLat !== '' && el.mapLng !== '') {
     return { lat: el.mapLat, lng: el.mapLng }
   }
   if (el.id === 'details_block') {
