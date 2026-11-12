@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useDesignStore, normalizeUrl } from '@/stores/useDesignStore'
+import type { DesignElement } from '@/types/design'
 import { Type, Save, GraduationCap, AlignHorizontalJustifyCenter, AlignVerticalJustifyCenter, Undo, Redo, Layers, ArrowUp, RotateCw, Smile, Eye, X, Music, Volume2 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -30,6 +31,18 @@ export function DesignerPage() {
   
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [isResizing, setIsResizing] = useState(false)
+  const resizeStateRef = useRef<{
+    id: string
+    handle: string
+    startX: number
+    startY: number
+    startElX: number
+    startElY: number
+    startW: number
+    startH: number
+    aspectRatio: number
+  } | null>(null)
   const [guides, setGuides] = useState<{ type: 'horizontal' | 'vertical', pos: number }[]>([])
   const [showIconPicker, setShowIconPicker] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
@@ -148,7 +161,31 @@ export function DesignerPage() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [selectedElementId, config.elements, moveElement])
 
-  // Handle Dragging
+  const handleResizeStart = (e: React.MouseEvent, handle: string, el: DesignElement) => {
+    e.stopPropagation()
+    e.preventDefault()
+    dragStartConfig.current = config
+    hasMovedRef.current = false
+    setIsResizing(true)
+
+    const domEl = document.getElementById(el.id)
+    const domRect = domEl?.getBoundingClientRect()
+    const currentW = el.width || (domRect ? Math.round(domRect.width) : 100)
+    const currentH = el.height || (domRect ? Math.round(domRect.height) : 100)
+
+    resizeStateRef.current = {
+      id: el.id,
+      handle,
+      startX: e.clientX,
+      startY: e.clientY,
+      startElX: el.x,
+      startElY: el.y,
+      startW: currentW,
+      startH: currentH,
+      aspectRatio: currentW / (currentH || 1),
+    }
+  }
+
   // Handle Dragging
   const handleMouseDown = (e: React.MouseEvent, id: string, x: number, y: number) => {
     e.stopPropagation()
@@ -165,6 +202,66 @@ export function DesignerPage() {
   }
 
   const handleMouseMove = (e: React.MouseEvent) => {
+    // 1. Resizing
+    if (isResizing && resizeStateRef.current) {
+      hasMovedRef.current = true
+      const state = resizeStateRef.current
+      const deltaX = e.clientX - state.startX
+      const deltaY = e.clientY - state.startY
+      const keepRatio = !e.shiftKey // Default keep ratio for images, or Shift to freeform
+
+      let newW = state.startW
+      let newH = state.startH
+      let newX = state.startElX
+      let newY = state.startElY
+
+      if (state.handle === 'se') {
+        newW = Math.max(20, state.startW + deltaX)
+        if (keepRatio) {
+          newH = Math.max(20, Math.round(newW / state.aspectRatio))
+        } else {
+          newH = Math.max(20, state.startH + deltaY)
+        }
+      } else if (state.handle === 'sw') {
+        const potentialW = Math.max(20, state.startW - deltaX)
+        newW = potentialW
+        newX = state.startElX + (state.startW - newW)
+        if (keepRatio) {
+          newH = Math.max(20, Math.round(newW / state.aspectRatio))
+        } else {
+          newH = Math.max(20, state.startH + deltaY)
+        }
+      } else if (state.handle === 'ne') {
+        newW = Math.max(20, state.startW + deltaX)
+        if (keepRatio) {
+          newH = Math.max(20, Math.round(newW / state.aspectRatio))
+          newY = state.startElY + (state.startH - newH)
+        } else {
+          newH = Math.max(20, state.startH - deltaY)
+          newY = state.startElY + (state.startH - newH)
+        }
+      } else if (state.handle === 'nw') {
+        newW = Math.max(20, state.startW - deltaX)
+        newX = state.startElX + (state.startW - newW)
+        if (keepRatio) {
+          newH = Math.max(20, Math.round(newW / state.aspectRatio))
+          newY = state.startElY + (state.startH - newH)
+        } else {
+          newH = Math.max(20, state.startH - deltaY)
+          newY = state.startElY + (state.startH - newH)
+        }
+      }
+
+      updateElement(state.id, {
+        x: Math.round(newX),
+        y: Math.round(newY),
+        width: Math.round(newW),
+        height: Math.round(newH),
+      }, false)
+      return
+    }
+
+    // 2. Dragging
     if (!isDragging || !selectedElementId) return
     
     hasMovedRef.current = true
@@ -197,9 +294,6 @@ export function DesignerPage() {
             const otherEl = document.getElementById(other.id)
             if (otherEl) {
                 const r = otherEl.getBoundingClientRect()
-                // Convert to relative vals if needed, but our stored x/y are relative. 
-                // We trust dimensions from DOM but use stored X/Y for positions to be safe? 
-                // Actually stored X/Y are "left/top".
                 const ow = r.width
                 const oh = r.height
                 
@@ -214,7 +308,6 @@ export function DesignerPage() {
         })
         
         // --- Apply X Snapping ---
-        // Check Left Edge, Center, Right Edge
         let snappedX = false
         
         // 1. Center to Candidates
@@ -286,11 +379,9 @@ export function DesignerPage() {
         }
     }
     
-    // Axis Locking with Shift (Override snap if shift is held? Or Combine? Let's treat Shift as strict lock)
+    // Axis Locking with Shift
     if (e.shiftKey) {
-        setGuides([]) // Hide guides when locking? Or show them? Let's hide to reduce noise or keep simple.
-        
-        // Determine dominant axis (re-using previous logic but simpler)
+        setGuides([])
         const currentEl = config.elements.find(el => el.id === selectedElementId)
         if (currentEl) {
              const dx = Math.abs(newX - currentEl.x)
@@ -306,10 +397,12 @@ export function DesignerPage() {
   }
 
   const handleMouseUp = () => {
-    if (isDragging && hasMovedRef.current) {
+    if ((isDragging || isResizing) && hasMovedRef.current) {
         pushStateToHistory(dragStartConfig.current)
     }
     setIsDragging(false)
+    setIsResizing(false)
+    resizeStateRef.current = null
     setGuides([])
   }
 
@@ -529,6 +622,28 @@ export function DesignerPage() {
                                             <div>
                                                 <label className="block text-[10px] text-slate-400 font-bold uppercase mb-1">Vị trí Y</label>
                                                 <input type="number" className="w-full border border-slate-200 rounded-lg p-2 text-sm" value={el.y} onChange={(e) => updateElement(el.id, { y: parseInt(e.target.value) || 0 })} />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="block text-[10px] text-slate-400 font-bold uppercase mb-1">Chiều rộng (W)</label>
+                                                <input 
+                                                    type="number" 
+                                                    placeholder="auto"
+                                                    className="w-full border border-slate-200 rounded-lg p-2 text-sm" 
+                                                    value={el.width ?? ''} 
+                                                    onChange={(e) => updateElement(el.id, { width: e.target.value === '' ? undefined : (parseInt(e.target.value) || 0) })} 
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] text-slate-400 font-bold uppercase mb-1">Chiều cao (H)</label>
+                                                <input 
+                                                    type="number" 
+                                                    placeholder="auto"
+                                                    className="w-full border border-slate-200 rounded-lg p-2 text-sm" 
+                                                    value={el.height ?? ''} 
+                                                    onChange={(e) => updateElement(el.id, { height: e.target.value === '' ? undefined : (parseInt(e.target.value) || 0) })} 
+                                                />
                                             </div>
                                         </div>
 
@@ -860,6 +975,28 @@ export function DesignerPage() {
                                     <div className="w-full h-full flex items-center justify-center bg-slate-100 text-[10px] text-slate-400">No Image</div>
                                 )
                             ) : el.content
+                        )}
+
+                        {/* Resize Handles when element is selected */}
+                        {selectedElementId === el.id && (
+                            <>
+                                <div
+                                    onMouseDown={(e) => handleResizeStart(e, 'nw', el)}
+                                    className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-blue-600 rounded-full cursor-nwse-resize z-10 shadow-sm hover:scale-125 transition-transform"
+                                />
+                                <div
+                                    onMouseDown={(e) => handleResizeStart(e, 'ne', el)}
+                                    className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-blue-600 rounded-full cursor-nesw-resize z-10 shadow-sm hover:scale-125 transition-transform"
+                                />
+                                <div
+                                    onMouseDown={(e) => handleResizeStart(e, 'sw', el)}
+                                    className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-blue-600 rounded-full cursor-nesw-resize z-10 shadow-sm hover:scale-125 transition-transform"
+                                />
+                                <div
+                                    onMouseDown={(e) => handleResizeStart(e, 'se', el)}
+                                    className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-blue-600 rounded-full cursor-nwse-resize z-10 shadow-sm hover:scale-125 transition-transform"
+                                />
+                            </>
                         )}
                     </div>
                  ))}
