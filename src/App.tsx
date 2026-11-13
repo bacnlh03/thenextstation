@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { Sidebar } from './components/ui/Sidebar'
 import { GuestsPage } from './pages/GuestsPage'
+import { WishesPage } from './pages/WishesPage'
 import { InvitationPage } from './pages/InvitationPage'
 import { DesignerPage } from './pages/DesignerPage'
 import { LoginPage } from './pages/LoginPage'
@@ -44,6 +45,7 @@ function AdminLayout() {
       <main className="flex-1 w-full relative">
         <Routes>
           <Route path="/" element={<GuestsPage />} />
+          <Route path="/wishes" element={<WishesPage />} />
           <Route path="/design" element={<DesignerPage />} />
         </Routes>
       </main>

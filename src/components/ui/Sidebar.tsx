@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Users, LogOut, GraduationCap } from 'lucide-react'
+import { Users, LogOut, GraduationCap, HeartHandshake } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuthStore } from '@/stores/useAuthStore'
 
@@ -36,6 +36,13 @@ export function Sidebar() {
           className={clsx("flex items-center gap-3 py-2.5 px-3 rounded-lg font-medium transition-all text-sm", isActive('/'))}
         >
           <Users size={17}/> Khách mời
+        </Link>
+
+        <Link 
+          to="/wishes" 
+          className={clsx("flex items-center gap-3 py-2.5 px-3 rounded-lg font-medium transition-all text-sm", isActive('/wishes'))}
+        >
+          <HeartHandshake size={17} /> Lời chúc
         </Link>
 
         <Link 
