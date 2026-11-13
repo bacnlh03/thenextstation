@@ -42,6 +42,8 @@ export interface DesignConfig {
     startTime?: number // in seconds
     endTime?: number   // in seconds
   }
+  // Personal photo album shown in the scrollable invitation page
+  photos?: string[]
 }
 
 // Default config to seed the editor (The current Panda themeish)

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useDesignStore, normalizeUrl } from '@/stores/useDesignStore'
 import type { DesignElement } from '@/types/design'
-import { Type, Save, GraduationCap, AlignHorizontalJustifyCenter, AlignVerticalJustifyCenter, Undo, Redo, Layers, ArrowUp, RotateCw, Smile, Eye, X, Music, Volume2 } from 'lucide-react'
+import { Type, Save, GraduationCap, AlignHorizontalJustifyCenter, AlignVerticalJustifyCenter, Undo, Redo, Layers, ArrowUp, RotateCw, Smile, Eye, X, Music, Volume2, Images, Plus, Trash2 } from 'lucide-react'
 import clsx from 'clsx'
 
 const FONTS = [
@@ -24,7 +24,7 @@ const FONTS = [
 export function DesignerPage() {
   const { 
       config, selectedElementId, loading, fetchConfig, saveConfig, 
-      selectElement, updateElement, addElement, moveElement, updateBackground, updateMusic, uploadFile, removeElement,
+      selectElement, updateElement, addElement, moveElement, updateBackground, updateMusic, updatePhotos, uploadFile, removeElement,
       undo, redo, past, future, pushStateToHistory,
       bringToFront, sendToBack
   } = useDesignStore()
@@ -47,8 +47,9 @@ export function DesignerPage() {
   const [showIconPicker, setShowIconPicker] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [musicDuration, setMusicDuration] = useState(0)
-  const [activeTab, setActiveTab] = useState<'design' | 'music'>('design')
+  const [activeTab, setActiveTab] = useState<'design' | 'music' | 'photos'>('design')
   const [isPlaying, setIsPlaying] = useState(false)
+  const [photoUploading, setPhotoUploading] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
   const previewAudioRef = useRef<HTMLAudioElement | null>(null)
   const lastAnalyzedUrl = useRef<string | null>(null)
@@ -481,9 +482,18 @@ export function DesignerPage() {
                  >
                      NHẠC NỀN
                  </button>
+                 <button 
+                    onClick={() => setActiveTab('photos')}
+                    className={clsx(
+                        "flex-1 py-3 text-[10px] font-bold transition-all border-b-2 tracking-widest",
+                        activeTab === 'photos' ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"
+                    )}
+                 >
+                     ALBUM
+                 </button>
             </div>
 
-            {activeTab === 'design' ? (
+            {activeTab === 'design' && (
                 <div className="space-y-6">
                     {/* Add Elements Section */}
                     <div>
@@ -728,7 +738,9 @@ export function DesignerPage() {
                         </div>
                     )}
                 </div>
-            ) : (
+            )}
+
+            {activeTab === 'music' && (
                 <div className="space-y-6">
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
                         <div className="flex items-center justify-between mb-4">
@@ -885,6 +897,90 @@ export function DesignerPage() {
                     </div>
                 </div>
             )}
+
+             {/* ── Photos tab ── */}
+             {activeTab === 'photos' && (
+                <div className="space-y-4">
+                    <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 mb-1">
+                            <Images size={14} className="text-indigo-600" /> Album ảnh cá nhân
+                        </p>
+                        <p className="text-[10px] text-slate-400 mb-4">
+                            Ảnh sẽ hiển thị dạng gallery khi khách scroll xuống dưới thiệp.
+                        </p>
+                    </div>
+
+                    {/* Upload button */}
+                    <label className={clsx(
+                        "w-full py-5 flex flex-col items-center justify-center border-2 border-dashed rounded-xl cursor-pointer transition-all group",
+                        photoUploading ? "border-indigo-300 bg-indigo-50/50" : "border-slate-200 bg-slate-50 hover:bg-white hover:border-indigo-400"
+                    )}>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            disabled={photoUploading}
+                            onChange={async (e) => {
+                                const files = Array.from(e.target.files || [])
+                                if (!files.length) return
+                                setPhotoUploading(true)
+                                const urls: string[] = []
+                                for (const file of files) {
+                                    const url = await uploadFile(file)
+                                    if (url) urls.push(url)
+                                }
+                                const current = config.photos || []
+                                updatePhotos([...current, ...urls])
+                                setPhotoUploading(false)
+                                e.target.value = ''
+                            }}
+                        />
+                        {photoUploading ? (
+                            <span className="text-sm text-indigo-500 font-medium animate-pulse">Đang tải lên…</span>
+                        ) : (
+                            <>
+                                <Plus size={22} className="text-slate-400 group-hover:text-indigo-500 transition-colors mb-1" />
+                                <span className="text-sm text-slate-500 group-hover:text-indigo-600 transition-colors font-medium">Thêm ảnh</span>
+                                <span className="text-[10px] text-slate-400 mt-0.5">Chọn nhiều ảnh cùng lúc</span>
+                            </>
+                        )}
+                    </label>
+
+                    {/* Photo grid */}
+                    {(config.photos || []).length > 0 ? (
+                        <div className="grid grid-cols-3 gap-2">
+                            {(config.photos || []).map((url, i) => (
+                                <div key={url + i} className="relative group aspect-square rounded-lg overflow-hidden border border-slate-200">
+                                    <img src={url} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const updated = [...(config.photos || [])]
+                                                updated.splice(i, 1)
+                                                updatePhotos(updated)
+                                            }}
+                                            className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                        >
+                                            <Trash2 size={13} />
+                                        </button>
+                                    </div>
+                                    <span className="absolute bottom-1 left-1 text-[9px] text-white/70 bg-black/40 px-1 rounded">{i + 1}</span>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-center text-xs text-slate-400 py-4">Chưa có ảnh nào. Tải lên để bắt đầu.</p>
+                    )}
+
+                    {(config.photos || []).length > 0 && (
+                        <p className="text-[10px] text-slate-400 text-center">
+                            {(config.photos || []).length} ảnh · Nhấn vào ảnh để xóa
+                        </p>
+                    )}
+                </div>
+             )}
           </div>
 
           {/* Fixed bottom bar */}

@@ -62,6 +62,7 @@ interface DesignState {
   removeElement: (id: string) => void
   updateBackground: (bg: Partial<DesignConfig['background']>) => void
   updateMusic: (music: Partial<DesignConfig['music']>, pushHistory?: boolean) => void
+  updatePhotos: (photos: string[]) => void
   moveElement: (id: string, x: number, y: number) => void
 
   bringToFront: (id: string) => void
@@ -229,6 +230,12 @@ export const useDesignStore = create<DesignState>((set, get) => ({
           ? { ...state.config.music, ...musicUpdates }
           : { url: '', enabled: true, ...musicUpdates },
       },
+    }))
+  },
+
+  updatePhotos: (photos) => {
+    set((state) => ({
+      config: { ...state.config, photos },
     }))
   },
 

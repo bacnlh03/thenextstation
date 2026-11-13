@@ -3,6 +3,30 @@ import type { DesignConfig } from '@/types/design'
 export interface Database {
   public: {
     Tables: {
+      wishes: {
+        Row: {
+          id: string
+          guest_id: string | null
+          guest_name: string
+          message: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          guest_id?: string | null
+          guest_name?: string
+          message: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          guest_id?: string | null
+          guest_name?: string
+          message?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       guests: {
         Row: {
           id: string
@@ -45,6 +69,10 @@ export interface Database {
     }
     Views: Record<string, never>
     Functions: {
+      submit_wish: {
+        Args: { p_guest_id: string | null; p_guest_name: string; p_message: string }
+        Returns: undefined
+      }
       confirm_guest_attendance: {
         Args: { guest_id: string }
         Returns: undefined
