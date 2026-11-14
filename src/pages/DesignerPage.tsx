@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useDesignStore, normalizeUrl } from '@/stores/useDesignStore'
 import type { DesignElement } from '@/types/design'
-import { Type, Save, GraduationCap, AlignHorizontalJustifyCenter, AlignVerticalJustifyCenter, Undo, Redo, Layers, ArrowUp, RotateCw, Smile, Eye, X, Music, Volume2, Images, Plus, Trash2, Monitor, ArrowLeft } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Type, Save, GraduationCap, AlignHorizontalJustifyCenter, AlignVerticalJustifyCenter, Undo, Redo, Layers, ArrowUp, RotateCw, Smile, Eye, X, Music, Volume2, Images, Plus, Trash2 } from 'lucide-react'
+import { MobileDesigner } from '@/components/designer/MobileDesigner'
 import clsx from 'clsx'
 
 const FONTS = [
@@ -430,29 +430,17 @@ export function DesignerPage() {
 
   return (
     <>
-      {/* Mobile Notice Banner/Screen */}
-      <div className="md:hidden flex flex-col items-center justify-center min-h-[calc(100vh-60px)] p-6 bg-slate-50 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mb-4 shadow-sm">
-          <Monitor size={32} />
-        </div>
-        <h2 className="text-xl font-bold text-slate-900 mb-2">Chưa hỗ trợ trên thiết bị di động</h2>
-        <p className="text-sm text-slate-500 max-w-sm leading-relaxed mb-6">
-          Trang thiết kế thiệp bao gồm kéo thả phần tử, căn chỉnh toạ độ và tùy biến giao diện chi tiết nên cần màn hình lớn (máy tính hoặc laptop) để có trải nghiệm tốt nhất.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
-          <Link
-            to="/"
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-900 text-white font-medium text-sm shadow hover:bg-slate-800 transition"
-          >
-            <ArrowLeft size={16} /> Quay lại Quản lý khách
-          </Link>
-          <button
-            onClick={() => setShowPreview(true)}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium text-sm hover:bg-slate-50 transition"
-          >
-            <Eye size={16} /> Xem trước thiệp
-          </button>
-        </div>
+      {/* Mobile Designer (Chế độ thiết kế nhanh & biên tập trực quan cho mobile) */}
+      <div className="md:hidden">
+        <MobileDesigner
+          onOpenPreview={() => setShowPreview(true)}
+          playPreview={playPreview}
+          stopPreview={stopPreview}
+          isPlaying={isPlaying}
+          musicDuration={musicDuration}
+          photoUploading={photoUploading}
+          setPhotoUploading={setPhotoUploading}
+        />
       </div>
 
       {/* Desktop Designer Canvas & Controls */}
