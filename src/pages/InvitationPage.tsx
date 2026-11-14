@@ -182,10 +182,10 @@ export function InvitationPage() {
       <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(6,5,16,0.72)_100%)]" />
 
       {/* ── SECTION 1: Invitation card (full viewport height, centered) ── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-4 py-8">
+      <section className="relative min-h-[100dvh] flex flex-col items-center justify-center px-4 pt-4 pb-16 md:py-8">
         <div 
           className={clsx(
-            "relative z-10 flex flex-col items-center",
+            "relative z-10 flex flex-col items-center -translate-y-2 md:translate-y-0",
             isVisible ? "animate-enter" : "opacity-0"
           )}
         >
@@ -206,11 +206,15 @@ export function InvitationPage() {
         {/* Scroll hint — appears after card opens, hides when user scrolls past (only if there are sections below) */}
         {hasSectionsBelow && (
           <div className={clsx(
-            'absolute bottom-7 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 transition-all duration-1000 z-20',
+            'absolute bottom-3 md:bottom-7 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 transition-all duration-1000 z-20 cursor-pointer',
             isOpened && !hasScrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          )}>
+          )}
+          onClick={() => {
+            window.scrollTo({ top: window.innerHeight * 0.8, behavior: 'smooth' })
+          }}
+          >
             <span
-              className="text-[9px] tracking-[0.35em] uppercase text-[#fcd34d]/60"
+              className="text-[9px] tracking-[0.35em] uppercase text-[#fcd34d]/70 font-semibold"
               style={{ fontFamily: 'Montserrat, sans-serif' }}
             >
               Cuộn xuống
@@ -223,7 +227,7 @@ export function InvitationPage() {
                   size={14}
                   className="text-[#fcd34d]"
                   style={{
-                    opacity: 0.25 + i * 0.3,
+                    opacity: 0.35 + i * 0.3,
                     animation: `bounce-slow 1.6s ease-in-out ${i * 0.18}s infinite`
                   }}
                 />
@@ -234,38 +238,21 @@ export function InvitationPage() {
       </section>
 
       {/* ── Sections revealed only after opening the card ── */}
-      {hasSectionsBelow && (
-        <div
-          className={clsx(
-            'relative z-10',
-            isOpened ? 'pointer-events-auto' : 'pointer-events-none overflow-hidden'
-          )}
-          style={{
-            maxHeight: isOpened ? '99999px' : '0px',
-            transition: isOpened ? 'max-height 0.1s ease' : 'none',
-          }}
-        >
+      {hasSectionsBelow && isOpened && (
+        <div className="relative z-10 animate-fade-in">
           {/* SECTION 2: Wishes (only if guest has allowWishes turned on) */}
           {allowWishes && (
             <>
               {/* Soft divider */}
-              <div
-                className="flex items-center justify-center gap-4 px-8"
-                style={{
-                  opacity: isOpened ? 1 : 0,
-                  transition: 'opacity 0.8s ease 0.3s',
-                }}
-              >
+              <div className="flex items-center justify-center gap-4 px-8">
                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#fcd34d]/20 to-transparent" />
                 <span className="text-[#fcd34d]/30 text-xs">✦</span>
                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#fcd34d]/20 to-transparent" />
               </div>
 
-              {isOpened && (
-                <section>
-                  <WishesSection guestId={guestId} guestName={guestName} />
-                </section>
-              )}
+              <section>
+                <WishesSection guestId={guestId} guestName={guestName} />
+              </section>
             </>
           )}
 
@@ -279,11 +266,9 @@ export function InvitationPage() {
                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#fcd34d]/20 to-transparent" />
               </div>
 
-              {isOpened && (
-                <section>
-                  <PhotoGallerySection photos={config.photos!} />
-                </section>
-              )}
+              <section>
+                <PhotoGallerySection photos={config.photos!} />
+              </section>
             </>
           )}
         </div>
@@ -317,8 +302,11 @@ function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen }: {
     useEffect(() => {
         const updateScale = () => {
             const frame = 28
-            const viewportWidth = window.innerWidth - 32 - frame
-            const viewportHeight = window.innerHeight - 120 - frame
+            const isMobile = window.innerWidth < 768
+            const horizontalMargin = isMobile ? 24 : 32
+            const verticalMargin = isMobile ? 150 : 120
+            const viewportWidth = window.innerWidth - horizontalMargin - frame
+            const viewportHeight = window.innerHeight - verticalMargin - frame
             const scaleX = viewportWidth / config.width
             const scaleY = viewportHeight / config.height
             const targetScale = Math.min(scaleX, scaleY, 1)

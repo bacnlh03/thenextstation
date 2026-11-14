@@ -7,29 +7,11 @@ interface Props {
 }
 
 export function PhotoGallerySection({ photos }: Props) {
-  const sectionRef = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(false)
-
-  useEffect(() => {
-    const el = sectionRef.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisible(true) },
-      { threshold: 0.06 }
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
-
   if (!photos.length) return null
 
   return (
     <div
-      ref={sectionRef}
-      className={clsx(
-        'w-full max-w-lg mx-auto px-5 pb-20 transition-all duration-1000',
-        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-      )}
+      className="w-full max-w-lg mx-auto px-5 pb-20"
     >
       {/* Section header */}
       <div className="flex flex-col items-center mb-10">

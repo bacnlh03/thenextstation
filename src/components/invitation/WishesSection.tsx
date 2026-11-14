@@ -37,20 +37,6 @@ export function WishesSection({ guestId, guestName, allowWishes = true }: Props)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const listRef = useRef<HTMLDivElement>(null)
-  const sectionRef = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(false)
-
-  // Intersection observer for fade-in
-  useEffect(() => {
-    const el = sectionRef.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisible(true) },
-      { threshold: 0.08 }
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
 
   useEffect(() => {
     setName(guestName)
@@ -100,11 +86,7 @@ export function WishesSection({ guestId, guestName, allowWishes = true }: Props)
 
   return (
     <div
-      ref={sectionRef}
-      className={clsx(
-        'w-full max-w-lg mx-auto px-5 py-14 transition-all duration-1000',
-        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-      )}
+      className="w-full max-w-lg mx-auto px-5 py-14"
     >
       {/* Header */}
       <div className="flex flex-col items-center mb-10">
@@ -123,7 +105,7 @@ export function WishesSection({ guestId, guestName, allowWishes = true }: Props)
           className="mt-1.5 text-xs tracking-[0.2em] uppercase text-[#94a3b8]"
           style={{ fontFamily: 'Montserrat, sans-serif' }}
         >
-          Gửi đến Ngọc Trâm những lời yêu thương
+          Gửi đến những lời yêu thương
         </p>
       </div>
 
