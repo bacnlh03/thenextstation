@@ -1162,11 +1162,12 @@ export function DesignerPage() {
            </div>
        )}
 
-       {/* Preview Modal */}
-       {showPreview && (
-           <PreviewModal onClose={() => setShowPreview(false)} />
-       )}
       </div>
+
+      {/* Preview Modal (dùng chung cho cả desktop và mobile) */}
+      {showPreview && (
+          <PreviewModal onClose={() => setShowPreview(false)} />
+      )}
     </>
   )
 }
@@ -1182,16 +1183,16 @@ function PreviewModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[200] bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-200">
       {/* Header bar */}
-      <div className="flex items-center justify-between w-full px-6 py-3 bg-black/40">
-        <div className="flex items-center gap-2 text-white/70 text-sm">
+      <div className="flex items-center justify-between w-full px-4 sm:px-6 py-3 bg-black/60">
+        <div className="flex items-center gap-2 text-white/90 text-xs sm:text-sm">
           <Eye size={16} />
           <span className="font-medium">Xem trước — hiển thị giống khách mời</span>
         </div>
         <button
           onClick={onClose}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 text-white rounded-lg hover:bg-white/20 transition text-sm"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg transition text-xs sm:text-sm font-bold"
         >
-          <X size={15} /> Đóng
+          <X size={16} /> Đóng
         </button>
       </div>
 
