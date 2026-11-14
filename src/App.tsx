@@ -41,9 +41,9 @@ function App() {
 
 function AdminLayout() {
   return (
-    <div className="flex w-full min-h-screen">
+    <div className="flex flex-col md:flex-row w-full min-h-screen">
       <Sidebar />
-      <main className="flex-1 w-full relative">
+      <main className="flex-1 w-full min-w-0 relative">
         <Routes>
           <Route path="/" element={<GuestsPage />} />
           <Route path="/wishes" element={<WishesPage />} />

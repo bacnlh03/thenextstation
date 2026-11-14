@@ -22,28 +22,28 @@ export function GuestToolbar({ filter, loading, onFilterChange, onRefresh }: Pro
   const current = STATUS_OPTIONS.find(o => o.value === filter.status) ?? STATUS_OPTIONS[0]
 
   return (
-    <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm">
       {/* Search */}
       <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
         <input 
           type="text"
           placeholder="Tìm kiếm khách mời..."
-          className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
+          className="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
           value={filter.search}
           onChange={(e) => onFilterChange({ search: e.target.value })}
         />
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3 items-center">
+      <div className="flex gap-2 sm:gap-3 items-center justify-between sm:justify-start">
 
         {/* Custom Status Dropdown */}
-        <div className="relative">
+        <div className="relative flex-1 sm:flex-none">
           <button
             onClick={() => setOpen(o => !o)}
             className={clsx(
-              "flex items-center gap-2 pl-3 pr-2 py-2 bg-slate-50 border border-slate-200 rounded-lg hover:bg-white hover:border-slate-300 transition-all text-sm font-medium text-slate-700 min-w-[140px] justify-between",
+              "w-full sm:w-auto flex items-center gap-2 pl-3 pr-2 py-2 bg-slate-50 border border-slate-200 rounded-lg hover:bg-white hover:border-slate-300 transition-all text-sm font-medium text-slate-700 min-w-[130px] justify-between",
               open && "border-emerald-400 ring-2 ring-emerald-100 bg-white"
             )}
           >

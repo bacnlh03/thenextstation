@@ -52,30 +52,24 @@ export function GuestsPage() {
   // const selectedGuests = guests.filter(g => selectedIds.has(g.id))
 
   return (
-    <div className="h-full flex flex-col p-4 md:p-8">
+    <div className="h-full flex flex-col p-3 sm:p-4 md:p-8">
       
-      <div className="flex justify-between items-center mb-6 shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6 shrink-0">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Khách mời</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Khách mời</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">Quản lý danh sách khách và chia sẻ thiệp</p>
         </div>
-        <div className="flex items-center gap-3">
-          {/* QR batch — tạm thời tắt
-          {selectedIds.size > 0 && (
-            <button 
-              onClick={() => setShowQR(true)} 
-              className="bg-white text-emerald-600 border border-emerald-200 px-5 py-2.5 rounded-lg font-medium shadow-sm hover:bg-emerald-50 flex items-center gap-2 transition-all animate-in fade-in slide-in-from-right-4"
-            >
-              <QrCode size={18}/> Tạo QR ({selectedIds.size})
-            </button>
-          )}
-          */}
-          <button onClick={() => setShowAdd(true)} className="bg-emerald-600 text-white px-5 py-2.5 rounded-lg font-medium shadow-lg hover:bg-emerald-700 flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button 
+            onClick={() => setShowAdd(true)} 
+            className="w-full sm:w-auto justify-center bg-emerald-600 text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-medium shadow-sm hover:bg-emerald-700 flex items-center gap-2 text-sm sm:text-base transition"
+          >
             <UserPlus size={18}/> Thêm danh sách
           </button>
         </div>
       </div>
 
-      <div className="mb-6 shrink-0 flex flex-col gap-4">
+      <div className="mb-4 sm:mb-6 shrink-0 flex flex-col gap-4">
         <GuestToolbar 
           filter={filter} 
           loading={loading} 

@@ -78,35 +78,35 @@ export function WishesPage() {
   )
 
   return (
-    <div className="h-full flex flex-col p-4 md:p-8 max-w-6xl mx-auto">
+    <div className="h-full flex flex-col p-3 sm:p-4 md:p-8 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6 shrink-0">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold text-slate-900">Lời chúc từ khách</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Lời chúc từ khách</h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-200">
               {wishes.length}
             </span>
           </div>
-          <p className="text-slate-500 text-sm mt-1">
+          <p className="text-slate-500 text-xs sm:text-sm mt-1">
             Tổng hợp tất cả lời chúc mừng mà khách đã gửi qua thiệp mời
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={fetchWishes}
-            className="p-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors flex items-center gap-1.5 text-sm font-medium"
+            className="p-2 sm:p-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors flex items-center gap-1.5 text-xs sm:text-sm font-medium"
             title="Tải lại"
           >
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-            <span className="hidden sm:inline">Làm mới</span>
+            <span>Làm mới</span>
           </button>
         </div>
       </div>
 
       {/* Filter Toolbar */}
-      <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm mb-6 flex items-center gap-3 shrink-0">
+      <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm mb-4 sm:mb-6 flex items-center gap-3 shrink-0">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -120,13 +120,13 @@ export function WishesPage() {
       </div>
 
       {/* Content list */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto pb-4">
         {loading ? (
           <div className="flex items-center justify-center py-20 text-slate-400 text-sm">
             Đang tải lời chúc...
           </div>
         ) : filteredWishes.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-8 sm:p-12 text-center">
             <Heart size={40} className="mx-auto text-slate-300 mb-3" />
             <p className="text-slate-700 font-medium">Chưa có lời chúc nào</p>
             <p className="text-slate-400 text-xs mt-1">
@@ -134,11 +134,11 @@ export function WishesPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {filteredWishes.map((item) => (
               <div
                 key={item.id}
-                className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between group relative"
+                className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between group relative"
               >
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-3">
@@ -158,14 +158,14 @@ export function WishesPage() {
 
                     <button
                       onClick={() => setDeleteId(item.id)}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                      className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                       title="Xóa lời chúc"
                     >
-                      <Trash2 size={15} />
+                      <Trash2 size={16} />
                     </button>
                   </div>
 
-                  <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap pl-10">
+                  <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap pl-1 sm:pl-10">
                     "{item.message}"
                   </p>
                 </div>

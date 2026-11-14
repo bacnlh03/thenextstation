@@ -47,8 +47,167 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full overflow-y-auto relative scroll-smooth">
-      <table className="w-full text-left border-collapse min-w-[600px]">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full overflow-hidden flex flex-col">
+      {/* Mobile Card View */}
+      <div className="md:hidden overflow-y-auto flex-1 p-3 space-y-3">
+        {loading && (
+          <div className="py-12 text-center text-slate-400">
+            <div className="flex justify-center items-center gap-2">
+              <Loader2 className="animate-spin" /> Đang tải...
+            </div>
+          </div>
+        )}
+
+        {!loading && guests.length === 0 && (
+          <div className="py-12 text-center text-slate-400 italic">Không có dữ liệu.</div>
+        )}
+
+        {guests.map((guest, idx) => (
+          <div key={guest.id} className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 space-y-3">
+            {/* Top row: Name & Actions */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-slate-400 font-semibold">#{idx + 1}</span>
+                  {editingId === guest.id ? (
+                    <div className="flex items-center gap-1.5 w-full">
+                      <input 
+                        autoFocus
+                        value={editNameModel}
+                        onChange={(e) => setEditNameModel(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEdit(guest)
+                          if (e.key === 'Escape') setEditingId(null)
+                        }}
+                        className="w-full px-2 py-1 text-sm border-2 border-emerald-500 rounded bg-white outline-none"
+                      />
+                      <button onClick={() => saveEdit(guest)} className="p-1.5 bg-emerald-500 text-white rounded hover:bg-emerald-600">
+                        <Save size={14} />
+                      </button>
+                      <button onClick={() => setEditingId(null)} className="p-1.5 text-slate-500 hover:bg-slate-200 rounded">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <span 
+                      onClick={() => startEdit(guest)} 
+                      className="font-bold text-slate-900 text-base break-words cursor-pointer"
+                      title="Chạm để sửa tên"
+                    >
+                      {guest.full_name}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Cập nhật: {formatDate(guest.updated_at)}
+                </p>
+              </div>
+
+              {/* Action buttons (always visible on mobile) */}
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => copyUrl(guest)}
+                  title="Copy link mời"
+                  className="p-2 text-slate-500 hover:text-indigo-600 active:bg-indigo-50 rounded-lg transition-colors border border-slate-200 bg-white"
+                >
+                  {copiedId === guest.id ? <Check size={16} className="text-emerald-500" /> : <Link2 size={16} />}
+                </button>
+                <button 
+                  onClick={() => startEdit(guest)} 
+                  className="p-2 text-slate-500 hover:text-emerald-600 active:bg-emerald-50 rounded-lg border border-slate-200 bg-white"
+                  title="Sửa tên"
+                >
+                  <Pencil size={16}/>
+                </button>
+                <button 
+                  onClick={() => onDelete(guest.id)} 
+                  className="p-2 text-slate-500 hover:text-red-600 active:bg-red-50 rounded-lg border border-slate-200 bg-white"
+                  title="Xóa khách"
+                >
+                  <Trash2 size={16}/>
+                </button>
+              </div>
+            </div>
+
+            {/* Bottom row: Status & Wishes setting */}
+            <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-200/60">
+              <div className="relative">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setStatusDropdownId(statusDropdownId === guest.id ? null : guest.id) }}
+                  className={clsx(
+                    "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border select-none transition-all active:scale-95",
+                    guest.status === 2 && 'bg-green-100 text-green-700 border-green-200',
+                    guest.status === 1 && 'bg-blue-100 text-blue-700 border-blue-200',
+                    guest.status === 0 && 'bg-white text-slate-600 border-slate-300',
+                  )}
+                >
+                  {guest.status === 2 && <><CheckCircle size={13} />XÁC NHẬN</>}
+                  {guest.status === 1 && <><Send size={13} />ĐÃ GỬI</>}
+                  {guest.status === 0 && <><XCircle size={13} />CHƯA GỬI</>}
+                </button>
+
+                {statusDropdownId === guest.id && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setStatusDropdownId(null)} />
+                    <div className="absolute left-0 bottom-full mb-1 z-50 bg-white border border-slate-200 rounded-lg shadow-xl py-1 min-w-[140px] animate-in fade-in slide-in-from-bottom-1">
+                      {[
+                        { value: 0, label: 'Chưa gửi',  icon: <XCircle size={14} />,     cls: 'text-slate-500' },
+                        { value: 1, label: 'Đã gửi',    icon: <Send size={14} />,          cls: 'text-blue-600' },
+                        { value: 2, label: 'Xác nhận',  icon: <CheckCircle size={14} />,  cls: 'text-green-600' },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => { onUpdateStatus(guest.id, opt.value); setStatusDropdownId(null) }}
+                          className={clsx(
+                            "w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold hover:bg-slate-50 transition-colors",
+                            opt.cls,
+                            guest.status === opt.value && 'bg-slate-50'
+                          )}
+                        >
+                          {opt.icon}
+                          {opt.label}
+                          {guest.status === opt.value && <span className="ml-auto text-slate-400">✓</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Wishes button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const currentAllow = guest.allow_wishes !== false
+                  onToggleAllowWishes?.(guest.id, !currentAllow)
+                }}
+                className={clsx(
+                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all active:scale-95 select-none",
+                  guest.allow_wishes !== false
+                    ? "bg-rose-50 text-rose-600 border-rose-200"
+                    : "bg-white text-slate-400 border-slate-300"
+                )}
+              >
+                {guest.allow_wishes !== false ? (
+                  <>
+                    <MessageSquareHeart size={13} />
+                    <span>Lời chúc: Bật</span>
+                  </>
+                ) : (
+                  <>
+                    <MessageSquareOff size={13} />
+                    <span>Lời chúc: Tắt</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-y-auto flex-1 relative scroll-smooth">
+        <table className="w-full text-left border-collapse min-w-[600px]">
         <thead className="bg-slate-50 text-slate-500 uppercase text-xs font-bold sticky top-0 z-10 shadow-sm">
           <tr>
             <th className="p-4 w-[5%] text-center bg-slate-50">#</th>
@@ -207,6 +366,7 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }
