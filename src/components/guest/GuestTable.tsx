@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckCircle, XCircle, Send, Pencil, Save, X, Trash2, Loader2, Link2, Check } from 'lucide-react'
+import { CheckCircle, XCircle, Send, Pencil, Save, X, Trash2, Loader2, Link2, Check, MessageSquareHeart, MessageSquareOff } from 'lucide-react'
 import type { Guest } from '@/types'
 import clsx from 'clsx'
 
@@ -9,9 +9,10 @@ interface Props {
   onUpdateName: (id: string, name: string) => void
   onDelete: (id: string) => void
   onUpdateStatus: (id: string, status: number) => void
+  onToggleAllowWishes?: (id: string, allow: boolean) => void
 }
 
-export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateStatus }: Props) {
+export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateStatus, onToggleAllowWishes }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editNameModel, setEditNameModel] = useState('')
   const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null)
@@ -49,9 +50,10 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
         <thead className="bg-slate-50 text-slate-500 uppercase text-xs font-bold sticky top-0 z-10 shadow-sm">
           <tr>
             <th className="p-4 w-[5%] text-center bg-slate-50">#</th>
-            <th className="p-4 w-[45%] bg-slate-50">Họ và Tên</th>
-            <th className="p-4 w-[20%] bg-slate-50">Trạng thái</th>
-            <th className="p-4 w-[20%] bg-slate-50">Cập nhật lúc</th>
+            <th className="p-4 w-[35%] bg-slate-50">Họ và Tên</th>
+            <th className="p-4 w-[18%] bg-slate-50">Trạng thái</th>
+            <th className="p-4 w-[15%] text-center bg-slate-50">Lời chúc</th>
+            <th className="p-4 w-[17%] bg-slate-50">Cập nhật lúc</th>
             <th className="p-4 text-right bg-slate-50">Hành động</th>
           </tr>
         </thead>
@@ -59,7 +61,7 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
           
           {loading && (
             <tr>
-              <td colSpan={5} className="py-12 text-center text-slate-400">
+              <td colSpan={6} className="py-12 text-center text-slate-400">
                 <div className="flex justify-center items-center gap-2">
                   <Loader2 className="animate-spin" /> Đang tải...
                 </div>
@@ -69,7 +71,7 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
           
           {!loading && guests.length === 0 && (
             <tr>
-              <td colSpan={5} className="py-12 text-center text-slate-400 italic">Không có dữ liệu.</td>
+              <td colSpan={6} className="py-12 text-center text-slate-400 italic">Không có dữ liệu.</td>
             </tr>
           )}
           
@@ -146,6 +148,35 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
                     </>
                   )}
                 </div>
+              </td>
+
+              <td className="p-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentAllow = guest.allow_wishes !== false
+                    onToggleAllowWishes?.(guest.id, !currentAllow)
+                  }}
+                  title={guest.allow_wishes !== false ? 'Bấm để tắt gửi lời chúc' : 'Bấm để bật gửi lời chúc'}
+                  className={clsx(
+                    "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer hover:scale-105 active:scale-95 select-none",
+                    guest.allow_wishes !== false
+                      ? "bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100"
+                      : "bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200 hover:text-slate-600"
+                  )}
+                >
+                  {guest.allow_wishes !== false ? (
+                    <>
+                      <MessageSquareHeart size={13} />
+                      <span>Cho phép</span>
+                    </>
+                  ) : (
+                    <>
+                      <MessageSquareOff size={13} />
+                      <span>Đã khóa</span>
+                    </>
+                  )}
+                </button>
               </td>
               
               <td className="p-4 text-sm text-slate-500 font-mono">{formatDate(guest.updated_at)}</td>

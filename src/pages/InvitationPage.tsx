@@ -21,6 +21,7 @@ export function InvitationPage() {
   
   const [guestName, setGuestName] = useState('Bạn của Ngọc Trâm')
   const [isConfirmed, setIsConfirmed] = useState<number>(0)
+  const [allowWishes, setAllowWishes] = useState<boolean>(true)
   const [isVisible, setIsVisible] = useState(false)
   const [isOpened, setIsOpened] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -34,6 +35,9 @@ export function InvitationPage() {
         if (guest) {
           setGuestName(guest.full_name)
           setIsConfirmed(guest.status)
+          if (typeof guest.allow_wishes === 'boolean') {
+            setAllowWishes(guest.allow_wishes)
+          }
         }
       }
       setTimeout(() => setIsVisible(true), 180)
@@ -119,10 +123,12 @@ export function InvitationPage() {
   }
 
   const hasMusic = Boolean(config.music?.enabled && config.music.url)
+  const hasPhotos = Boolean(config.photos && config.photos.length > 0)
+  const hasSectionsBelow = Boolean(allowWishes || hasPhotos)
 
   return (
     <div 
-      className="min-h-screen w-full relative selection:bg-[#fcd34d]/30 selection:text-[#1e1b4b]"
+      className="min-h-screen w-full relative overflow-x-hidden selection:bg-[#fcd34d]/30 selection:text-[#1e1b4b]"
       style={{
           background: 'radial-gradient(ellipse at 50% 0%, #2a2458 0%, #16132e 42%, #0b0918 100%)',
       }}
@@ -197,81 +203,91 @@ export function InvitationPage() {
           />
         </div>
 
-        {/* Scroll hint — appears after card opens, hides when user scrolls past */}
-        <div className={clsx(
-          'absolute bottom-7 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 transition-all duration-1000 z-20',
-          isOpened && !hasScrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        )}>
-          <span
-            className="text-[9px] tracking-[0.35em] uppercase text-[#fcd34d]/60"
-            style={{ fontFamily: 'Montserrat, sans-serif' }}
-          >
-            Cuộn xuống
-          </span>
-          {/* Triple chevron cascade */}
-          <div className="flex flex-col items-center -space-y-2">
-            {[0, 1, 2].map(i => (
-              <ChevronDown
-                key={i}
-                size={14}
-                className="text-[#fcd34d]"
-                style={{
-                  opacity: 0.25 + i * 0.3,
-                  animation: `bounce-slow 1.6s ease-in-out ${i * 0.18}s infinite`
-                }}
-              />
-            ))}
+        {/* Scroll hint — appears after card opens, hides when user scrolls past (only if there are sections below) */}
+        {hasSectionsBelow && (
+          <div className={clsx(
+            'absolute bottom-7 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 transition-all duration-1000 z-20',
+            isOpened && !hasScrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          )}>
+            <span
+              className="text-[9px] tracking-[0.35em] uppercase text-[#fcd34d]/60"
+              style={{ fontFamily: 'Montserrat, sans-serif' }}
+            >
+              Cuộn xuống
+            </span>
+            {/* Triple chevron cascade */}
+            <div className="flex flex-col items-center -space-y-2">
+              {[0, 1, 2].map(i => (
+                <ChevronDown
+                  key={i}
+                  size={14}
+                  className="text-[#fcd34d]"
+                  style={{
+                    opacity: 0.25 + i * 0.3,
+                    animation: `bounce-slow 1.6s ease-in-out ${i * 0.18}s infinite`
+                  }}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </section>
 
       {/* ── Sections revealed only after opening the card ── */}
-      <div
-        className={clsx(
-          'relative z-10',
-          isOpened ? 'pointer-events-auto' : 'pointer-events-none overflow-hidden'
-        )}
-        style={{
-          maxHeight: isOpened ? '99999px' : '0px',
-          transition: isOpened ? 'max-height 0.1s ease' : 'none',
-        }}
-      >
-        {/* Soft divider */}
+      {hasSectionsBelow && (
         <div
-          className="flex items-center justify-center gap-4 px-8"
+          className={clsx(
+            'relative z-10',
+            isOpened ? 'pointer-events-auto' : 'pointer-events-none overflow-hidden'
+          )}
           style={{
-            opacity: isOpened ? 1 : 0,
-            transition: 'opacity 0.8s ease 0.3s',
+            maxHeight: isOpened ? '99999px' : '0px',
+            transition: isOpened ? 'max-height 0.1s ease' : 'none',
           }}
         >
-          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#fcd34d]/20 to-transparent" />
-          <span className="text-[#fcd34d]/30 text-xs">✦</span>
-          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#fcd34d]/20 to-transparent" />
+          {/* SECTION 2: Wishes (only if guest has allowWishes turned on) */}
+          {allowWishes && (
+            <>
+              {/* Soft divider */}
+              <div
+                className="flex items-center justify-center gap-4 px-8"
+                style={{
+                  opacity: isOpened ? 1 : 0,
+                  transition: 'opacity 0.8s ease 0.3s',
+                }}
+              >
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#fcd34d]/20 to-transparent" />
+                <span className="text-[#fcd34d]/30 text-xs">✦</span>
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#fcd34d]/20 to-transparent" />
+              </div>
+
+              {isOpened && (
+                <section>
+                  <WishesSection guestId={guestId} guestName={guestName} />
+                </section>
+              )}
+            </>
+          )}
+
+          {/* SECTION 3: Photo gallery */}
+          {hasPhotos && (
+            <>
+              {/* Soft divider */}
+              <div className="flex items-center justify-center gap-4 px-8">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#fcd34d]/20 to-transparent" />
+                <span className="text-[#fcd34d]/30 text-xs">✦</span>
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#fcd34d]/20 to-transparent" />
+              </div>
+
+              {isOpened && (
+                <section>
+                  <PhotoGallerySection photos={config.photos!} />
+                </section>
+              )}
+            </>
+          )}
         </div>
-
-        {/* SECTION 2: Wishes */}
-        {isOpened && (
-          <section>
-            <WishesSection guestId={guestId} guestName={guestName} />
-          </section>
-        )}
-
-        {/* Soft divider */}
-        {config.photos && config.photos.length > 0 && isOpened && (
-          <div className="flex items-center justify-center gap-4 px-8">
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#fcd34d]/20 to-transparent" />
-            <span className="text-[#fcd34d]/30 text-xs">✦</span>
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#fcd34d]/20 to-transparent" />
-          </div>
-        )}
-
-        {/* SECTION 3: Photo gallery */}
-        {config.photos && config.photos.length > 0 && isOpened && (
-          <section>
-            <PhotoGallerySection photos={config.photos} />
-          </section>
-        )}
-      </div>
+      )}
 
       {/* Music toggle button */}
       {hasMusic && isOpened && (

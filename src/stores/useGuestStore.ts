@@ -41,6 +41,7 @@ interface GuestState {
   createGuests: (names: string[]) => Promise<boolean>
   updateName: (id: string, name: string) => Promise<boolean>
   updateStatus: (id: string, status: number) => Promise<boolean>
+  toggleAllowWishes: (id: string, allow: boolean) => Promise<boolean>
   deleteGuest: (id: string) => Promise<boolean>
   getGuestById: (id: string) => Promise<Guest | null>
   confirmAttendance: (id: string) => Promise<boolean>
@@ -150,6 +151,32 @@ export const useGuestStore = create<GuestState>((set, get) => ({
     }
     await get().fetchGuests()
     useToastStore.getState().showToast('Lỗi cập nhật trạng thái', 'error')
+    return false
+  },
+
+  toggleAllowWishes: async (id, allow) => {
+    if (!requireAuth()) return false
+    const now = new Date().toISOString()
+    set((state) => ({
+      guests: state.guests.map((g) =>
+        g.id === id ? { ...g, allow_wishes: allow, updated_at: now } : g
+      ),
+    }))
+    try {
+      const { error } = await supabase
+        .from('guests')
+        .update({ allow_wishes: allow })
+        .eq('id', id)
+      if (error) throw error
+      useToastStore
+        .getState()
+        .showToast(allow ? 'Đã bật gửi lời chúc cho khách' : 'Đã tắt gửi lời chúc cho khách')
+      return true
+    } catch (err) {
+      console.error(err)
+    }
+    await get().fetchGuests()
+    useToastStore.getState().showToast('Lỗi cập nhật cài đặt lời chúc', 'error')
     return false
   },
 

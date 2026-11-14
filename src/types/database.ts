@@ -32,18 +32,21 @@ export interface Database {
           id: string
           full_name: string
           status: number
+          allow_wishes?: boolean
           updated_at: string
         }
         Insert: {
           id?: string
           full_name: string
           status?: number
+          allow_wishes?: boolean
           updated_at?: string
         }
         Update: {
           id?: string
           full_name?: string
           status?: number
+          allow_wishes?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -83,6 +86,7 @@ export interface Database {
           id: string
           full_name: string
           status: number
+          allow_wishes?: boolean
           updated_at: string
         }[]
       }

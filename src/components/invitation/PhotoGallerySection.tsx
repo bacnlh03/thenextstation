@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { Camera, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Camera } from 'lucide-react'
 import clsx from 'clsx'
 
 interface Props {
@@ -9,7 +9,6 @@ interface Props {
 export function PhotoGallerySection({ photos }: Props) {
   const sectionRef = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
-  const [lightbox, setLightbox] = useState<number | null>(null)
 
   useEffect(() => {
     const el = sectionRef.current
@@ -21,22 +20,6 @@ export function PhotoGallerySection({ photos }: Props) {
     obs.observe(el)
     return () => obs.disconnect()
   }, [])
-
-  const openLightbox = (i: number) => setLightbox(i)
-  const closeLightbox = useCallback(() => setLightbox(null), [])
-  const prev = useCallback(() => setLightbox(i => i !== null ? (i - 1 + photos.length) % photos.length : null), [photos.length])
-  const next = useCallback(() => setLightbox(i => i !== null ? (i + 1) % photos.length : null), [photos.length])
-
-  useEffect(() => {
-    if (lightbox === null) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeLightbox()
-      if (e.key === 'ArrowLeft') prev()
-      if (e.key === 'ArrowRight') next()
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [lightbox, closeLightbox, prev, next])
 
   if (!photos.length) return null
 
@@ -76,66 +59,14 @@ export function PhotoGallerySection({ photos }: Props) {
             key={url + i}
             url={url}
             index={i}
-            onClick={() => openLightbox(i)}
           />
         ))}
       </div>
-
-      {/* Lightbox */}
-      {lightbox !== null && (
-        <div
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-md"
-          onClick={closeLightbox}
-        >
-          {/* Prev */}
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); prev() }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
-          >
-            <ChevronLeft size={24} />
-          </button>
-
-          {/* Image */}
-          <img
-            src={photos[lightbox]}
-            alt={`Ảnh ${lightbox + 1}`}
-            className="max-h-[85vh] max-w-[90vw] rounded-xl object-contain shadow-2xl select-none"
-            onClick={e => e.stopPropagation()}
-          />
-
-          {/* Next */}
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); next() }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
-          >
-            <ChevronRight size={24} />
-          </button>
-
-          {/* Close */}
-          <button
-            type="button"
-            onClick={closeLightbox}
-            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
-          >
-            <X size={20} />
-          </button>
-
-          {/* Counter */}
-          <span
-            className="absolute bottom-5 left-1/2 -translate-x-1/2 text-xs text-white/50 tracking-widest"
-            style={{ fontFamily: 'Montserrat, sans-serif' }}
-          >
-            {lightbox + 1} / {photos.length}
-          </span>
-        </div>
-      )}
     </div>
   )
 }
 
-function PhotoTile({ url, index, onClick }: { url: string; index: number; onClick: () => void }) {
+function PhotoTile({ url, index }: { url: string; index: number }) {
   const ref = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
   const [loaded, setLoaded] = useState(false)
@@ -154,11 +85,9 @@ function PhotoTile({ url, index, onClick }: { url: string; index: number; onClic
   return (
     <div
       ref={ref}
-      onClick={onClick}
       className={clsx(
-        'relative break-inside-avoid cursor-pointer overflow-hidden rounded-2xl',
-        'border border-[#fcd34d]/10 group transition-all duration-700',
-        'hover:border-[#fcd34d]/30 hover:shadow-[0_8px_32px_rgba(252,211,77,0.15)]',
+        'relative break-inside-avoid overflow-hidden rounded-2xl select-none',
+        'border border-[#fcd34d]/10 transition-all duration-700',
         visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
       )}
       style={{ transitionDelay: `${Math.min(index * 80, 500)}ms` }}
@@ -173,14 +102,10 @@ function PhotoTile({ url, index, onClick }: { url: string; index: number; onClic
         loading="lazy"
         onLoad={() => setLoaded(true)}
         className={clsx(
-          'w-full h-auto object-cover transition-all duration-500',
-          'group-hover:scale-[1.03]',
+          'w-full h-auto object-cover transition-opacity duration-500 pointer-events-none',
           loaded ? 'opacity-100' : 'opacity-0'
         )}
       />
-      {/* Overlay on hover */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
     </div>
   )
 }
-

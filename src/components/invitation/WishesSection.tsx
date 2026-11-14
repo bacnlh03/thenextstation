@@ -13,6 +13,7 @@ interface Wish {
 interface Props {
   guestId: string | null
   guestName: string
+  allowWishes?: boolean
 }
 
 const MAX_CHARS = 300
@@ -28,7 +29,7 @@ function timeAgo(isoDate: string): string {
   return `${days} ngày trước`
 }
 
-export function WishesSection({ guestId, guestName }: Props) {
+export function WishesSection({ guestId, guestName, allowWishes = true }: Props) {
   const [wishes, setWishes] = useState<Wish[]>([])
   const [message, setMessage] = useState('')
   const [name, setName] = useState(guestName)
@@ -127,88 +128,96 @@ export function WishesSection({ guestId, guestName }: Props) {
       </div>
 
       {/* Form */}
-      {!submitted ? (
-        <form onSubmit={handleSubmit} className="mb-10">
-          <div className="mb-3">
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Tên của bạn"
-              maxLength={60}
-              className={clsx(
-                'w-full bg-white/5 border border-[#fcd34d]/20 rounded-xl px-4 py-3',
-                'text-[#fef3c7] placeholder:text-[#64748b] text-sm',
-                'focus:outline-none focus:border-[#fcd34d]/60 focus:bg-white/8 transition-all',
-                'font-[Montserrat,sans-serif]'
-              )}
-            />
-          </div>
+      {allowWishes ? (
+        !submitted ? (
+          <form onSubmit={handleSubmit} className="mb-10">
+            <div className="mb-3">
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Tên của bạn"
+                maxLength={60}
+                className={clsx(
+                  'w-full bg-white/5 border border-[#fcd34d]/20 rounded-xl px-4 py-3',
+                  'text-[#fef3c7] placeholder:text-[#64748b] text-base md:text-sm',
+                  'focus:outline-none focus:border-[#fcd34d]/60 focus:bg-white/8 transition-all',
+                  'font-[Montserrat,sans-serif]'
+                )}
+              />
+            </div>
 
-          <div className="relative mb-1.5">
-            <textarea
-              value={message}
-              onChange={e => setMessage(e.target.value.slice(0, MAX_CHARS))}
-              placeholder="Viết lời chúc mừng của bạn…"
-              rows={4}
+            <div className="relative mb-1.5">
+              <textarea
+                value={message}
+                onChange={e => setMessage(e.target.value.slice(0, MAX_CHARS))}
+                placeholder="Viết lời chúc mừng của bạn…"
+                rows={4}
+                className={clsx(
+                  'w-full bg-white/5 border border-[#fcd34d]/20 rounded-xl px-4 py-3 resize-none',
+                  'text-[#fef3c7] placeholder:text-[#64748b] text-base md:text-sm leading-relaxed',
+                  'focus:outline-none focus:border-[#fcd34d]/60 focus:bg-white/8 transition-all',
+                  'font-[Montserrat,sans-serif]'
+                )}
+              />
+              <span
+                className={clsx(
+                  'absolute bottom-3 right-3 text-[10px] transition-colors',
+                  remaining < 30 ? 'text-amber-400' : 'text-[#475569]'
+                )}
+              >
+                {remaining}
+              </span>
+            </div>
+
+            {error && (
+              <p className="text-red-400 text-xs mb-2 pl-1">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting || !message.trim()}
               className={clsx(
-                'w-full bg-white/5 border border-[#fcd34d]/20 rounded-xl px-4 py-3 resize-none',
-                'text-[#fef3c7] placeholder:text-[#64748b] text-sm leading-relaxed',
-                'focus:outline-none focus:border-[#fcd34d]/60 focus:bg-white/8 transition-all',
-                'font-[Montserrat,sans-serif]'
-              )}
-            />
-            <span
-              className={clsx(
-                'absolute bottom-3 right-3 text-[10px] transition-colors',
-                remaining < 30 ? 'text-amber-400' : 'text-[#475569]'
+                'w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold tracking-widest uppercase transition-all duration-300',
+                'font-[Montserrat,sans-serif]',
+                message.trim() && !submitting
+                  ? 'bg-[#fcd34d] text-[#1e1b4b] hover:bg-[#fbbf24] shadow-[0_0_20px_rgba(252,211,77,0.3)] hover:shadow-[0_0_28px_rgba(252,211,77,0.5)] hover:scale-[1.02] active:scale-[0.98]'
+                  : 'bg-white/5 text-[#475569] cursor-not-allowed border border-white/10'
               )}
             >
-              {remaining}
-            </span>
+              {submitting ? (
+                <span className="animate-pulse">Đang gửi…</span>
+              ) : (
+                <>
+                  <Send size={14} />
+                  Gửi lời chúc
+                </>
+              )}
+            </button>
+          </form>
+        ) : (
+          <div className="mb-10 flex flex-col items-center gap-3 py-6">
+            <Sparkles size={28} className="text-[#fcd34d] animate-pulse" />
+            <p
+              className="text-[#fef3c7] text-base text-center"
+              style={{ fontFamily: 'Playfair Display, serif' }}
+            >
+              Cảm ơn bạn đã gửi lời chúc! 🎓
+            </p>
+            <button
+              type="button"
+              onClick={() => setSubmitted(false)}
+              className="text-[10px] tracking-widest uppercase text-[#64748b] hover:text-[#94a3b8] transition-colors"
+            >
+              Gửi thêm lời chúc
+            </button>
           </div>
-
-          {error && (
-            <p className="text-red-400 text-xs mb-2 pl-1">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={submitting || !message.trim()}
-            className={clsx(
-              'w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold tracking-widest uppercase transition-all duration-300',
-              'font-[Montserrat,sans-serif]',
-              message.trim() && !submitting
-                ? 'bg-[#fcd34d] text-[#1e1b4b] hover:bg-[#fbbf24] shadow-[0_0_20px_rgba(252,211,77,0.3)] hover:shadow-[0_0_28px_rgba(252,211,77,0.5)] hover:scale-[1.02] active:scale-[0.98]'
-                : 'bg-white/5 text-[#475569] cursor-not-allowed border border-white/10'
-            )}
-          >
-            {submitting ? (
-              <span className="animate-pulse">Đang gửi…</span>
-            ) : (
-              <>
-                <Send size={14} />
-                Gửi lời chúc
-              </>
-            )}
-          </button>
-        </form>
+        )
       ) : (
-        <div className="mb-10 flex flex-col items-center gap-3 py-6">
-          <Sparkles size={28} className="text-[#fcd34d] animate-pulse" />
-          <p
-            className="text-[#fef3c7] text-base text-center"
-            style={{ fontFamily: 'Playfair Display, serif' }}
-          >
-            Cảm ơn bạn đã gửi lời chúc! 🎓
+        <div className="mb-10 py-6 px-4 rounded-xl border border-[#fcd34d]/10 bg-white/[0.02] text-center">
+          <p className="text-xs text-[#94a3b8]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            Tính năng gửi lời chúc hiện đang tạm đóng cho thiệp này
           </p>
-          <button
-            type="button"
-            onClick={() => setSubmitted(false)}
-            className="text-[10px] tracking-widest uppercase text-[#64748b] hover:text-[#94a3b8] transition-colors"
-          >
-            Gửi thêm lời chúc
-          </button>
         </div>
       )}
 
