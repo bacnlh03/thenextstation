@@ -6,19 +6,21 @@ import { useDesignStore } from '@/stores/useDesignStore'
 import { InvitationRenderer } from '@/components/InvitationRenderer'
 import { WishesSection } from '@/components/invitation/WishesSection'
 import { PhotoGallerySection } from '@/components/invitation/PhotoGallerySection'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useParams } from 'react-router-dom'
 import clsx from 'clsx'
 import type { DesignConfig } from '@/types/design'
 import type { Guest } from '@/types'
 
 export function InvitationPage() {
   const [searchParams] = useSearchParams()
-  const guestId = searchParams.get('id')
+  const { slug } = useParams<{ slug?: string }>()
+  const guestIdentifier = slug || searchParams.get('id') || searchParams.get('to')
   
   const getGuestById = useGuestStore(state => state.getGuestById)
   const confirmAttendance = useGuestStore(state => state.confirmAttendance)
   const { config, fetchConfig } = useDesignStore()
   
+  const [guestId, setGuestId] = useState<string | null>(null)
   const [guestName, setGuestName] = useState('Bạn của Ngọc Trâm')
   const [isConfirmed, setIsConfirmed] = useState<number>(0)
   const [allowWishes, setAllowWishes] = useState<boolean>(true)
@@ -30,9 +32,10 @@ export function InvitationPage() {
   useEffect(() => {
     async function init() {
       await fetchConfig()
-      if (guestId) {
-        const guest = await getGuestById(guestId)
+      if (guestIdentifier) {
+        const guest = await getGuestById(guestIdentifier)
         if (guest) {
+          setGuestId(guest.id)
           setGuestName(guest.full_name)
           setIsConfirmed(guest.status)
           if (typeof guest.allow_wishes === 'boolean') {
@@ -43,7 +46,7 @@ export function InvitationPage() {
       setTimeout(() => setIsVisible(true), 180)
     }
     init()
-  }, [guestId, getGuestById, fetchConfig])
+  }, [guestIdentifier, getGuestById, fetchConfig])
 
   useEffect(() => {
     if (config.music?.enabled && config.music.url && !audioRef.current) {

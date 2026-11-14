@@ -18,10 +18,12 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
   const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
-  const copyUrl = (id: string) => {
-    const url = `${window.location.origin}/invitation?id=${id}`
+  const copyUrl = (guest: Guest) => {
+    const url = guest.slug 
+      ? `${window.location.origin}/to/${guest.slug}`
+      : `${window.location.origin}/invitation?id=${guest.id}`
     navigator.clipboard.writeText(url)
-    setCopiedId(id)
+    setCopiedId(guest.id)
     setTimeout(() => setCopiedId(null), 2000)
   }
 
@@ -190,7 +192,7 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
                 ) : (
                   <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      onClick={() => copyUrl(guest.id)}
+                      onClick={() => copyUrl(guest)}
                       title="Copy link mời"
                       className="p-2 text-slate-400 hover:text-indigo-600 rounded transition-colors"
                     >

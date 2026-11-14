@@ -30,6 +30,7 @@ export interface Database {
       guests: {
         Row: {
           id: string
+          slug?: string
           full_name: string
           status: number
           allow_wishes?: boolean
@@ -37,6 +38,7 @@ export interface Database {
         }
         Insert: {
           id?: string
+          slug?: string
           full_name: string
           status?: number
           allow_wishes?: boolean
@@ -44,6 +46,7 @@ export interface Database {
         }
         Update: {
           id?: string
+          slug?: string
           full_name?: string
           status?: number
           allow_wishes?: boolean
@@ -84,6 +87,18 @@ export interface Database {
         Args: { guest_id: string }
         Returns: {
           id: string
+          slug?: string
+          full_name: string
+          status: number
+          allow_wishes?: boolean
+          updated_at: string
+        }[]
+      }
+      get_guest_by_slug_or_id: {
+        Args: { query_key: string }
+        Returns: {
+          id: string
+          slug?: string
           full_name: string
           status: number
           allow_wishes?: boolean

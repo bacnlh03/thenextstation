@@ -195,13 +195,20 @@ export const useGuestStore = create<GuestState>((set, get) => ({
     return false
   },
 
-  getGuestById: async (id) => {
+  getGuestById: async (idOrSlug) => {
     try {
-      const { data, error } = await supabase.rpc('get_guest_public', {
-        guest_id: id,
+      // First attempt using the new slug or ID RPC
+      const { data, error } = await supabase.rpc('get_guest_by_slug_or_id', {
+        query_key: idOrSlug,
       })
-      if (error) throw error
-      const row = data?.[0]
+      if (!error && data && data.length > 0) {
+        return data[0] as Guest
+      }
+      // Fallback for backward compatibility
+      const { data: fallbackData } = await supabase.rpc('get_guest_public', {
+        guest_id: idOrSlug,
+      })
+      const row = fallbackData?.[0]
       return row ? (row as Guest) : null
     } catch (err) {
       console.error(err)

@@ -24,6 +24,7 @@ function App() {
           {/* Public routes — no sidebar, no auth */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/invitation" element={<InvitationPage />} />
+          <Route path="/to/:slug" element={<InvitationPage />} />
 
           {/* Protected admin routes */}
           <Route path="/*" element={
