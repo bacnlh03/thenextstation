@@ -26,7 +26,7 @@ begin
 end;
 $$;
 
--- 3. Trigger to auto-generate slug on insert if not provided
+-- 3. Trigger to auto-generate slug on insert or when full_name changes
 create or replace function public.set_guest_slug()
 returns trigger
 language plpgsql
@@ -36,7 +36,8 @@ declare
   new_slug text;
   counter integer := 1;
 begin
-  if new.slug is null or trim(new.slug) = '' then
+  -- Re-generate slug if it is null/empty OR if this is an update and full_name has changed
+  if TG_OP = 'INSERT' or (TG_OP = 'UPDATE' and new.full_name is distinct from old.full_name) or new.slug is null or trim(new.slug) = '' then
     base_slug := generate_slug(new.full_name);
     if base_slug is null or base_slug = '' then
       base_slug := 'khach-moi';
@@ -55,7 +56,7 @@ $$;
 
 drop trigger if exists trigger_set_guest_slug on public.guests;
 create trigger trigger_set_guest_slug
-  before insert or update of full_name on public.guests
+  before insert or update of full_name, slug on public.guests
   for each row execute function public.set_guest_slug();
 
 -- 4. Backfill existing guests with unique slugs
