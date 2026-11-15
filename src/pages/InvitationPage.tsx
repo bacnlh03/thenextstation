@@ -270,7 +270,7 @@ export function InvitationPage() {
               </div>
 
               <section>
-                <PhotoGallerySection photos={config.photos!} />
+                <PhotoGallerySection photos={config.photos!} layout={config.photoLayout} />
               </section>
             </>
           )}

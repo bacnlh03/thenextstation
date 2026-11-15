@@ -2,8 +2,11 @@ import { useState } from 'react'
 import { useDesignStore, normalizeUrl } from '@/stores/useDesignStore'
 import { 
   Type, Save, GraduationCap, Eye, Layers, Music, Volume2, Images, 
-  Trash2, ChevronRight, ArrowLeft, ArrowUp, ArrowDown, Plus
+  Trash2, ChevronRight, ArrowLeft, ArrowUp, ArrowDown, Plus, GripVertical,
+  Sparkles, Grid, RotateCcw, RotateCw
 } from 'lucide-react'
+import { normalizeMomentPhoto } from '@/types/design'
+import type { MomentPhoto, PhotoFrameStyle } from '@/types/design'
 import { InvitationRenderer } from '@/components/InvitationRenderer'
 import clsx from 'clsx'
 
@@ -44,10 +47,60 @@ export function MobileDesigner({
 }: Props) {
   const {
     config, selectedElementId, loading, saveConfig,
-    selectElement, updateElement, addElement, updateBackground, updateMusic, updatePhotos, uploadFile, removeElement
+    selectElement, updateElement, addElement, updateBackground, updateMusic, updatePhotos, updatePhotoLayout, uploadFile, removeElement
   } = useDesignStore()
 
   const [activeTab, setActiveTab] = useState<'content' | 'theme' | 'music' | 'photos'>('content')
+  const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null)
+
+  const normalizedPhotos: MomentPhoto[] = (config.photos || []).map((p, i) =>
+    normalizeMomentPhoto(p, i, config.photos?.length || 1)
+  )
+
+  const selectedPhoto = normalizedPhotos.find(p => p.id === selectedPhotoId) || null
+
+  const updatePhotoById = (id: string, updates: Partial<MomentPhoto>) => {
+    const list = normalizedPhotos.map(p => {
+      if (p.id === id) {
+        return { ...p, ...updates }
+      }
+      return p
+    })
+    updatePhotos(list)
+  }
+
+  const bringPhotoToFront = (id: string) => {
+    const maxZ = Math.max(...normalizedPhotos.map(p => p.zIndex || 1), 1)
+    updatePhotoById(id, { zIndex: maxZ + 1 })
+  }
+
+  const sendPhotoToBack = (id: string) => {
+    const minZ = Math.min(...normalizedPhotos.map(p => p.zIndex || 1), 1)
+    updatePhotoById(id, { zIndex: Math.max(1, minZ - 1) })
+  }
+
+  const stepPhotoLayer = (id: string, step: number) => {
+    const current = normalizedPhotos.find(p => p.id === id)
+    if (!current) return
+    updatePhotoById(id, { zIndex: Math.max(1, (current.zIndex || 1) + step) })
+  }
+
+  const autoArrangePhotos = () => {
+    const list = normalizedPhotos.map((p, index) => {
+      const isLeft = index % 2 === 0
+      const defaultRotation = isLeft ? -7 + ((index * 3) % 9) : 5 - ((index * 2) % 7)
+      const defaultX = isLeft ? 25 + (index % 3) * 8 : 185 - (index % 3) * 8
+      const defaultY = 20 + index * 125
+      return {
+        ...p,
+        x: defaultX,
+        y: defaultY,
+        rotation: defaultRotation,
+        zIndex: index + 1,
+      }
+    })
+    updatePhotos(list)
+  }
 
   const selectedEl = config.elements.find(e => e.id === selectedElementId)
 
@@ -65,7 +118,23 @@ export function MobileDesigner({
         if (url) urls.push(url)
       }
       if (urls.length) {
-        updatePhotos([...(config.photos || []), ...urls])
+        const current = normalizedPhotos
+        const startIndex = current.length
+        const newPhotos: MomentPhoto[] = urls.map((url, i) => {
+          const idx = startIndex + i
+          const isLeft = idx % 2 === 0
+          return {
+            id: `photo_${Date.now()}_${i}`,
+            url,
+            x: isLeft ? 25 + (idx % 3) * 8 : 185 - (idx % 3) * 8,
+            y: 20 + idx * 125,
+            width: 175,
+            rotation: isLeft ? -7 + ((idx * 3) % 9) : 5 - ((idx * 2) % 7),
+            zIndex: idx + 1,
+            frame: 'polaroid' as PhotoFrameStyle
+          }
+        })
+        updatePhotos([...current, ...newPhotos])
       }
     } finally {
       setPhotoUploading(false)
@@ -166,7 +235,7 @@ export function MobileDesigner({
           { key: 'content', label: 'Nội dung', icon: Type },
           { key: 'theme', label: 'Phông nền', icon: Layers },
           { key: 'music', label: 'Nhạc nền', icon: Music },
-          { key: 'photos', label: 'Album', icon: Images },
+          { key: 'photos', label: 'Khoảnh khắc', icon: Images },
         ].map((tab) => {
           const Icon = tab.icon
           const isActive = activeTab === tab.key
@@ -500,10 +569,35 @@ export function MobileDesigner({
         {activeTab === 'photos' && (
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-4">
             <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Album ảnh tốt nghiệp</p>
-              <p className="text-[11px] text-slate-500">Hiển thị dạng cuộn gallery ở cuối thiệp.</p>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Ảnh khoảnh khắc</p>
+              <p className="text-[11px] text-slate-400 mb-2">Tự do xoay góc, chỉnh kích thước và độ đè lớp (ảnh đè lên nhau).</p>
             </div>
 
+            {/* Layout switch */}
+            <div className="flex bg-slate-100 p-1 rounded-xl">
+              <button
+                type="button"
+                onClick={() => updatePhotoLayout('collage')}
+                className={clsx(
+                  "flex-1 py-1.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all",
+                  (config.photoLayout || 'collage') === 'collage' ? "bg-white text-indigo-600 shadow-xs" : "text-slate-500 hover:text-slate-700"
+                )}
+              >
+                <Sparkles size={13} /> Tự do (Collage)
+              </button>
+              <button
+                type="button"
+                onClick={() => updatePhotoLayout('grid')}
+                className={clsx(
+                  "flex-1 py-1.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all",
+                  config.photoLayout === 'grid' ? "bg-white text-indigo-600 shadow-xs" : "text-slate-500 hover:text-slate-700"
+                )}
+              >
+                <Grid size={13} /> Lưới (Grid)
+              </button>
+            </div>
+
+            {/* Upload button */}
             <label className={clsx(
               "w-full py-4 flex flex-col items-center justify-center border-2 border-dashed rounded-xl cursor-pointer transition",
               photoUploading ? "border-indigo-300 bg-indigo-50/50" : "border-slate-200 bg-slate-50 hover:bg-white"
@@ -522,24 +616,240 @@ export function MobileDesigner({
               />
             </label>
 
-            {(config.photos || []).length > 0 && (
-              <div className="grid grid-cols-3 gap-2 pt-2">
-                {(config.photos || []).map((url, i) => (
-                  <div key={url + i} className="relative aspect-square rounded-lg overflow-hidden border border-slate-200">
-                    <img src={url} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+            {/* Selected Photo Inspector on Mobile */}
+            {selectedPhoto && (
+              <div className="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-3 animate-in fade-in duration-150">
+                <div className="flex items-center justify-between border-b border-indigo-100 pb-2">
+                  <div className="flex items-center gap-2">
+                    <img src={selectedPhoto.url} alt="Ảnh chọn" className="w-8 h-8 rounded object-cover border border-indigo-200" />
+                    <div>
+                      <p className="text-xs font-bold text-indigo-900">Ảnh đang chọn</p>
+                      <p className="text-[10px] text-indigo-600">Góc: {selectedPhoto.rotation || 0}° · Lớp đè: #{selectedPhoto.zIndex}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPhotoId(null)}
+                    className="text-xs text-slate-400 hover:text-slate-600 font-medium"
+                  >
+                    Đóng
+                  </button>
+                </div>
+
+                {/* Rotation */}
+                <div>
+                  <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+                    <span>Xoay ảnh:</span>
+                    <span className="font-mono text-indigo-600">{selectedPhoto.rotation || 0}°</span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1 mb-2">
                     <button
                       type="button"
-                      onClick={() => {
-                        const updated = [...(config.photos || [])]
-                        updated.splice(i, 1)
-                        updatePhotos(updated)
-                      }}
-                      className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full shadow"
+                      title="Xoay -90°"
+                      onClick={() => updatePhotoById(selectedPhoto.id, { rotation: ((selectedPhoto.rotation || 0) - 90) % 360 })}
+                      className="py-1 text-[10px] font-medium bg-white hover:bg-slate-50 border border-slate-200 rounded flex items-center justify-center gap-0.5"
                     >
-                      <Trash2 size={11} />
+                      <RotateCcw size={10} /> -90°
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updatePhotoById(selectedPhoto.id, { rotation: -15 })}
+                      className={clsx("py-1 text-[10px] font-mono rounded border", selectedPhoto.rotation === -15 ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-slate-200")}
+                    >
+                      -15°
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updatePhotoById(selectedPhoto.id, { rotation: 0 })}
+                      className={clsx("py-1 text-[10px] font-mono rounded border", selectedPhoto.rotation === 0 ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-slate-200")}
+                    >
+                      0°
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updatePhotoById(selectedPhoto.id, { rotation: 15 })}
+                      className={clsx("py-1 text-[10px] font-mono rounded border", selectedPhoto.rotation === 15 ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-slate-200")}
+                    >
+                      +15°
+                    </button>
+                    <button
+                      type="button"
+                      title="Xoay +90°"
+                      onClick={() => updatePhotoById(selectedPhoto.id, { rotation: ((selectedPhoto.rotation || 0) + 90) % 360 })}
+                      className="py-1 text-[10px] font-medium bg-white hover:bg-slate-50 border border-slate-200 rounded flex items-center justify-center gap-0.5"
+                    >
+                      <RotateCw size={10} /> +90°
                     </button>
                   </div>
-                ))}
+                  <input
+                    type="range"
+                    min="-180"
+                    max="180"
+                    value={selectedPhoto.rotation || 0}
+                    onChange={(e) => updatePhotoById(selectedPhoto.id, { rotation: parseInt(e.target.value) || 0 })}
+                    className="w-full accent-indigo-600"
+                  />
+                </div>
+
+                {/* Overlapping & Layers */}
+                <div>
+                  <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+                    <span>Độ đè lớp (Ảnh đè lên nhau):</span>
+                    <span className="text-[10px] font-mono text-slate-500">Tầng #{selectedPhoto.zIndex}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => bringPhotoToFront(selectedPhoto.id)}
+                      className="py-1.5 px-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1 shadow-xs"
+                    >
+                      <Layers size={12} /> Lên trên cùng
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => sendPhotoToBack(selectedPhoto.id)}
+                      className="py-1.5 px-2 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center justify-center gap-1 shadow-xs"
+                    >
+                      <Layers size={12} className="rotate-180" /> Xuống dưới cùng
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 mt-1.5">
+                    <button
+                      type="button"
+                      onClick={() => stepPhotoLayer(selectedPhoto.id, 1)}
+                      className="py-1 px-2 bg-white border border-slate-200 text-slate-600 text-[11px] rounded flex items-center justify-center gap-1"
+                    >
+                      +1 Lớp (Lên)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => stepPhotoLayer(selectedPhoto.id, -1)}
+                      className="py-1 px-2 bg-white border border-slate-200 text-slate-600 text-[11px] rounded flex items-center justify-center gap-1"
+                    >
+                      -1 Lớp (Xuống)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Size */}
+                <div>
+                  <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+                    <span>Kích thước ảnh:</span>
+                    <span className="font-mono text-indigo-600">{selectedPhoto.width}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="110"
+                    max="300"
+                    step="5"
+                    value={selectedPhoto.width}
+                    onChange={(e) => updatePhotoById(selectedPhoto.id, { width: parseInt(e.target.value) || 175 })}
+                    className="w-full accent-indigo-600"
+                  />
+                </div>
+
+                {/* Frame */}
+                <div>
+                  <p className="text-xs font-semibold text-slate-700 mb-1">Khung ảnh:</p>
+                  <div className="grid grid-cols-3 gap-1">
+                    <button
+                      type="button"
+                      onClick={() => updatePhotoById(selectedPhoto.id, { frame: 'polaroid' })}
+                      className={clsx(
+                        "py-1 text-[10px] font-medium rounded border",
+                        (selectedPhoto.frame || 'polaroid') === 'polaroid' ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-slate-200 text-slate-600"
+                      )}
+                    >
+                      Polaroid
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updatePhotoById(selectedPhoto.id, { frame: 'gold' })}
+                      className={clsx(
+                        "py-1 text-[10px] font-medium rounded border",
+                        selectedPhoto.frame === 'gold' ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-slate-200 text-slate-600"
+                      )}
+                    >
+                      Viền vàng
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updatePhotoById(selectedPhoto.id, { frame: 'borderless' })}
+                      className={clsx(
+                        "py-1 text-[10px] font-medium rounded border",
+                        selectedPhoto.frame === 'borderless' ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-slate-200 text-slate-600"
+                      )}
+                    >
+                      Không viền
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updated = normalizedPhotos.filter(p => p.id !== selectedPhoto.id)
+                    updatePhotos(updated)
+                    setSelectedPhotoId(null)
+                  }}
+                  className="w-full py-1.5 text-xs text-red-600 hover:bg-red-50 rounded-lg flex items-center justify-center gap-1 font-medium border border-red-200"
+                >
+                  <Trash2 size={12} /> Xóa ảnh này
+                </button>
+              </div>
+            )}
+
+            {/* Photo list */}
+            {normalizedPhotos.length > 0 && (
+              <div className="space-y-2 pt-2">
+                <div className="flex items-center justify-between text-[11px] text-slate-500">
+                  <span>Nhấp vào ảnh để chỉnh sửa ({normalizedPhotos.length})</span>
+                  <button
+                    type="button"
+                    onClick={autoArrangePhotos}
+                    className="text-[10px] text-indigo-600 font-medium hover:underline flex items-center gap-0.5"
+                  >
+                    <Sparkles size={10} /> Tự động xếp
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {normalizedPhotos.map((photo, i) => {
+                    const isSelected = selectedPhotoId === photo.id
+                    return (
+                      <div
+                        key={photo.id || photo.url + i}
+                        onClick={() => setSelectedPhotoId(photo.id)}
+                        className={clsx(
+                          "relative aspect-square rounded-xl overflow-hidden border bg-slate-100 flex flex-col justify-between shadow-xs transition-all cursor-pointer",
+                          isSelected ? "ring-2 ring-indigo-600 border-indigo-600" : "border-slate-200"
+                        )}
+                      >
+                        <img src={photo.url} alt={`Ảnh ${i + 1}`} className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
+
+                        {/* Top Bar with Badge & Delete */}
+                        <div className="relative z-10 flex items-center justify-between p-1.5 bg-gradient-to-b from-black/60 to-transparent">
+                          <span className="flex items-center gap-0.5 text-[10px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-sm">
+                            <GripVertical size={10} className="text-white/70" />
+                            #{i + 1}
+                          </span>
+                          <span className="text-[9px] text-amber-300 font-mono bg-black/60 px-1 rounded backdrop-blur-sm">
+                            {photo.rotation || 0}°
+                          </span>
+                        </div>
+
+                        {/* Bottom Bar: Quick select / info */}
+                        <div className="relative z-10 flex items-center justify-between p-1.5 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+                          <span className="text-[10px] text-white/90 font-medium">
+                            Lớp #{photo.zIndex || i + 1}
+                          </span>
+                          <span className="text-[10px] text-indigo-300 font-medium">
+                            {isSelected ? 'Đang chọn' : 'Chạm chỉnh'}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             )}
           </div>

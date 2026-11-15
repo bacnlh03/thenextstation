@@ -1,8 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDesignStore, normalizeUrl } from '@/stores/useDesignStore'
-import type { DesignElement } from '@/types/design'
-import { Type, Save, GraduationCap, AlignHorizontalJustifyCenter, AlignVerticalJustifyCenter, Undo, Redo, Layers, ArrowUp, RotateCw, Smile, Eye, X, Music, Volume2, Images, Plus, Trash2 } from 'lucide-react'
+import type { DesignElement, MomentPhoto, PhotoFrameStyle } from '@/types/design'
+import { normalizeMomentPhoto } from '@/types/design'
+import { 
+  Type, Save, GraduationCap, AlignHorizontalJustifyCenter, AlignVerticalJustifyCenter, 
+  Undo, Redo, Layers, ArrowUp, RotateCw, RotateCcw, Smile, Eye, X, Music, Volume2, 
+  Images, Plus, Trash2, Sparkles, Grid 
+} from 'lucide-react'
 import { MobileDesigner } from '@/components/designer/MobileDesigner'
+import { PhotoCollageCanvas } from '@/components/designer/PhotoCollageCanvas'
 import clsx from 'clsx'
 
 const FONTS = [
@@ -25,7 +31,7 @@ const FONTS = [
 export function DesignerPage() {
   const { 
       config, selectedElementId, loading, fetchConfig, saveConfig, 
-      selectElement, updateElement, addElement, moveElement, updateBackground, updateMusic, updatePhotos, uploadFile, removeElement,
+      selectElement, updateElement, addElement, moveElement, updateBackground, updateMusic, updatePhotos, updatePhotoLayout, uploadFile, removeElement,
       undo, redo, past, future, pushStateToHistory,
       bringToFront, sendToBack
   } = useDesignStore()
@@ -52,6 +58,71 @@ export function DesignerPage() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [photoUploading, setPhotoUploading] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
+
+  // Photos Collage Studio State
+  const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null)
+  const collageCanvasRef = useRef<HTMLDivElement>(null)
+
+  const normalizedPhotos: MomentPhoto[] = useMemo(
+    () => (config.photos || []).map((p, i) => normalizeMomentPhoto(p, i, config.photos?.length || 1)),
+    [config.photos]
+  )
+
+  const selectedPhoto = normalizedPhotos.find(p => p.id === selectedPhotoId) || null
+
+  const updatePhotoById = (id: string, updates: Partial<MomentPhoto>, pushHistory = true) => {
+    const list = normalizedPhotos.map(p => {
+      if (p.id === id) {
+        return { ...p, ...updates }
+      }
+      return p
+    })
+    if (pushHistory) {
+      updatePhotos(list)
+    } else {
+      useDesignStore.setState(state => ({
+        config: { ...state.config, photos: list }
+      }))
+    }
+  }
+
+  const bringPhotoToFront = (id: string) => {
+    const maxZ = Math.max(...normalizedPhotos.map(p => p.zIndex || 1), 1)
+    updatePhotoById(id, { zIndex: maxZ + 1 })
+  }
+
+  const sendPhotoToBack = (id: string) => {
+    const minZ = Math.min(...normalizedPhotos.map(p => p.zIndex || 1), 1)
+    updatePhotoById(id, { zIndex: Math.max(1, minZ - 1) })
+  }
+
+  const stepPhotoLayer = (id: string, step: number) => {
+    const current = normalizedPhotos.find(p => p.id === id)
+    if (!current) return
+    updatePhotoById(id, { zIndex: Math.max(1, (current.zIndex || 1) + step) })
+  }
+
+  const handlePhotoMouseDown = (_e: React.MouseEvent, _photo: MomentPhoto) => {
+    // Photo drag is now handled inside PhotoCollageCanvas component
+  }
+
+  const autoArrangePhotos = () => {
+    const list = normalizedPhotos.map((p, index) => {
+      const isLeft = index % 2 === 0
+      const defaultRotation = isLeft ? -7 + ((index * 3) % 9) : 5 - ((index * 2) % 7)
+      const defaultX = isLeft ? 25 + (index % 3) * 8 : 185 - (index % 3) * 8
+      const defaultY = 20 + index * 125
+      return {
+        ...p,
+        x: defaultX,
+        y: defaultY,
+        rotation: defaultRotation,
+        zIndex: index + 1,
+      }
+    })
+    updatePhotos(list)
+  }
+
   const previewAudioRef = useRef<HTMLAudioElement | null>(null)
   const lastAnalyzedUrl = useRef<string | null>(null)
 
@@ -204,6 +275,7 @@ export function DesignerPage() {
   }
 
   const handleMouseMove = (e: React.MouseEvent) => {
+    // 0. Photo Collage Dragging — now handled inside PhotoCollageCanvas component
     // 1. Resizing
     if (isResizing && resizeStateRef.current) {
       hasMovedRef.current = true
@@ -505,7 +577,7 @@ export function DesignerPage() {
                         activeTab === 'photos' ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"
                     )}
                  >
-                     ALBUM
+                     KHOẢNH KHẮC
                  </button>
             </div>
 
@@ -919,16 +991,40 @@ export function DesignerPage() {
                 <div className="space-y-4">
                     <div>
                         <p className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 mb-1">
-                            <Images size={14} className="text-indigo-600" /> Album ảnh cá nhân
+                            <Images size={14} className="text-indigo-600" /> Bảng thiết kế ảnh khoảnh khắc
                         </p>
-                        <p className="text-[10px] text-slate-400 mb-4">
-                            Ảnh sẽ hiển thị dạng gallery khi khách scroll xuống dưới thiệp.
+                        <p className="text-[10px] text-slate-400">
+                            Tự do kéo vị trí, xoay góc ngang/dọc, và sắp xếp ảnh đè lên nhau như scrapbook.
                         </p>
+                    </div>
+
+                    {/* Layout switcher */}
+                    <div className="flex bg-slate-100 p-1 rounded-xl">
+                        <button
+                            type="button"
+                            onClick={() => updatePhotoLayout('collage')}
+                            className={clsx(
+                                "flex-1 py-1.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all",
+                                (config.photoLayout || 'collage') === 'collage' ? "bg-white text-indigo-600 shadow-xs" : "text-slate-500 hover:text-slate-700"
+                            )}
+                        >
+                            <Sparkles size={13} /> Tự do (Collage)
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => updatePhotoLayout('grid')}
+                            className={clsx(
+                                "flex-1 py-1.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all",
+                                config.photoLayout === 'grid' ? "bg-white text-indigo-600 shadow-xs" : "text-slate-500 hover:text-slate-700"
+                            )}
+                        >
+                            <Grid size={13} /> Dạng lưới (Grid)
+                        </button>
                     </div>
 
                     {/* Upload button */}
                     <label className={clsx(
-                        "w-full py-5 flex flex-col items-center justify-center border-2 border-dashed rounded-xl cursor-pointer transition-all group",
+                        "w-full py-4 flex flex-col items-center justify-center border-2 border-dashed rounded-xl cursor-pointer transition-all group",
                         photoUploading ? "border-indigo-300 bg-indigo-50/50" : "border-slate-200 bg-slate-50 hover:bg-white hover:border-indigo-400"
                     )}>
                         <input
@@ -946,8 +1042,23 @@ export function DesignerPage() {
                                     const url = await uploadFile(file)
                                     if (url) urls.push(url)
                                 }
-                                const current = config.photos || []
-                                updatePhotos([...current, ...urls])
+                                const current = normalizedPhotos
+                                const startIndex = current.length
+                                const newPhotos: MomentPhoto[] = urls.map((url, i) => {
+                                    const idx = startIndex + i
+                                    const isLeft = idx % 2 === 0
+                                    return {
+                                        id: `photo_${Date.now()}_${i}`,
+                                        url,
+                                        x: isLeft ? 25 + (idx % 3) * 8 : 185 - (idx % 3) * 8,
+                                        y: 20 + idx * 125,
+                                        width: 175,
+                                        rotation: isLeft ? -7 + ((idx * 3) % 9) : 5 - ((idx * 2) % 7),
+                                        zIndex: idx + 1,
+                                        frame: 'polaroid' as PhotoFrameStyle
+                                    }
+                                })
+                                updatePhotos([...current, ...newPhotos])
                                 setPhotoUploading(false)
                                 e.target.value = ''
                             }}
@@ -956,45 +1067,247 @@ export function DesignerPage() {
                             <span className="text-sm text-indigo-500 font-medium animate-pulse">Đang tải lên…</span>
                         ) : (
                             <>
-                                <Plus size={22} className="text-slate-400 group-hover:text-indigo-500 transition-colors mb-1" />
-                                <span className="text-sm text-slate-500 group-hover:text-indigo-600 transition-colors font-medium">Thêm ảnh</span>
-                                <span className="text-[10px] text-slate-400 mt-0.5">Chọn nhiều ảnh cùng lúc</span>
+                                <Plus size={20} className="text-slate-400 group-hover:text-indigo-500 transition-colors mb-0.5" />
+                                <span className="text-xs text-slate-600 group-hover:text-indigo-600 transition-colors font-medium">+ Thêm ảnh mới</span>
+                                <span className="text-[9px] text-slate-400">Chọn nhiều ảnh cùng lúc</span>
                             </>
                         )}
                     </label>
 
-                    {/* Photo grid */}
-                    {(config.photos || []).length > 0 ? (
-                        <div className="grid grid-cols-3 gap-2">
-                            {(config.photos || []).map((url, i) => (
-                                <div key={url + i} className="relative group aspect-square rounded-lg overflow-hidden border border-slate-200">
-                                    <img src={url} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const updated = [...(config.photos || [])]
-                                                updated.splice(i, 1)
-                                                updatePhotos(updated)
-                                            }}
-                                            className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                                        >
-                                            <Trash2 size={13} />
-                                        </button>
+                    {/* Selected Photo Inspector */}
+                    {selectedPhoto ? (
+                        <div className="p-3.5 bg-indigo-50/60 border border-indigo-200 rounded-xl space-y-3.5 animate-in fade-in duration-200">
+                            <div className="flex items-center justify-between border-b border-indigo-100 pb-2">
+                                <div className="flex items-center gap-2">
+                                    <img src={selectedPhoto.url} alt="Ảnh chọn" className="w-8 h-8 rounded object-cover border border-indigo-200" />
+                                    <div>
+                                        <p className="text-xs font-bold text-indigo-900">Tùy chỉnh ảnh đang chọn</p>
+                                        <p className="text-[10px] text-indigo-600">Lớp đè: #{selectedPhoto.zIndex} · Góc: {selectedPhoto.rotation || 0}°</p>
                                     </div>
-                                    <span className="absolute bottom-1 left-1 text-[9px] text-white/70 bg-black/40 px-1 rounded">{i + 1}</span>
                                 </div>
-                            ))}
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedPhotoId(null)}
+                                    className="text-xs text-slate-400 hover:text-slate-600"
+                                >
+                                    Đóng
+                                </button>
+                            </div>
+
+                            {/* Rotation */}
+                            <div>
+                                <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1.5">
+                                    <span>Xoay ảnh:</span>
+                                    <span className="font-mono text-indigo-600">{selectedPhoto.rotation || 0}°</span>
+                                </div>
+                                <div className="grid grid-cols-5 gap-1 mb-2">
+                                    <button
+                                        type="button"
+                                        title="Xoay ngang trái 90°"
+                                        onClick={() => updatePhotoById(selectedPhoto.id, { rotation: ((selectedPhoto.rotation || 0) - 90) % 360 })}
+                                        className="py-1 text-[10px] font-medium bg-white hover:bg-slate-50 border border-slate-200 rounded flex items-center justify-center gap-0.5"
+                                    >
+                                        <RotateCcw size={10} /> -90°
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => updatePhotoById(selectedPhoto.id, { rotation: -15 })}
+                                        className={clsx("py-1 text-[10px] font-mono rounded border", selectedPhoto.rotation === -15 ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-slate-200")}
+                                    >
+                                        -15°
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => updatePhotoById(selectedPhoto.id, { rotation: 0 })}
+                                        className={clsx("py-1 text-[10px] font-mono rounded border", selectedPhoto.rotation === 0 ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-slate-200")}
+                                    >
+                                        0°
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => updatePhotoById(selectedPhoto.id, { rotation: 15 })}
+                                        className={clsx("py-1 text-[10px] font-mono rounded border", selectedPhoto.rotation === 15 ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-slate-200")}
+                                    >
+                                        +15°
+                                    </button>
+                                    <button
+                                        type="button"
+                                        title="Xoay ngang phải 90°"
+                                        onClick={() => updatePhotoById(selectedPhoto.id, { rotation: ((selectedPhoto.rotation || 0) + 90) % 360 })}
+                                        className="py-1 text-[10px] font-medium bg-white hover:bg-slate-50 border border-slate-200 rounded flex items-center justify-center gap-0.5"
+                                    >
+                                        <RotateCw size={10} /> +90°
+                                    </button>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="-180"
+                                    max="180"
+                                    value={selectedPhoto.rotation || 0}
+                                    onChange={(e) => updatePhotoById(selectedPhoto.id, { rotation: parseInt(e.target.value) || 0 })}
+                                    className="w-full accent-indigo-600"
+                                />
+                            </div>
+
+                            {/* Overlapping & Layering */}
+                            <div>
+                                <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1.5">
+                                    <span>Thứ tự đè lớp (Ảnh đè lên nhau):</span>
+                                    <span className="text-[10px] text-slate-400 font-mono">Tầng #{selectedPhoto.zIndex}</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => bringPhotoToFront(selectedPhoto.id)}
+                                        className="py-1.5 px-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1 shadow-xs transition-colors"
+                                    >
+                                        <Layers size={13} /> Lên trên cùng
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => sendPhotoToBack(selectedPhoto.id)}
+                                        className="py-1.5 px-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center justify-center gap-1 shadow-xs transition-colors"
+                                    >
+                                        <Layers size={13} className="rotate-180" /> Xuống dưới cùng
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-1.5 mt-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => stepPhotoLayer(selectedPhoto.id, 1)}
+                                        className="py-1 px-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 text-[11px] rounded flex items-center justify-center gap-1"
+                                    >
+                                        +1 Lớp (Lên 1 bậc)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => stepPhotoLayer(selectedPhoto.id, -1)}
+                                        className="py-1 px-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 text-[11px] rounded flex items-center justify-center gap-1"
+                                    >
+                                        -1 Lớp (Xuống 1 bậc)
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Size / Width */}
+                            <div>
+                                <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1.5">
+                                    <span>Kích thước ảnh:</span>
+                                    <span className="font-mono text-indigo-600">{selectedPhoto.width}px</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="110"
+                                    max="320"
+                                    step="5"
+                                    value={selectedPhoto.width}
+                                    onChange={(e) => updatePhotoById(selectedPhoto.id, { width: parseInt(e.target.value) || 175 })}
+                                    className="w-full accent-indigo-600"
+                                />
+                            </div>
+
+                            {/* Frame style */}
+                            <div>
+                                <p className="text-xs font-semibold text-slate-700 mb-1.5">Kiểu khung ảnh:</p>
+                                <div className="grid grid-cols-3 gap-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => updatePhotoById(selectedPhoto.id, { frame: 'polaroid' })}
+                                        className={clsx(
+                                            "py-1 text-[10px] font-medium rounded border",
+                                            (selectedPhoto.frame || 'polaroid') === 'polaroid' ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-slate-200 text-slate-600"
+                                        )}
+                                    >
+                                        Polaroid
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => updatePhotoById(selectedPhoto.id, { frame: 'gold' })}
+                                        className={clsx(
+                                            "py-1 text-[10px] font-medium rounded border",
+                                            selectedPhoto.frame === 'gold' ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-slate-200 text-slate-600"
+                                        )}
+                                    >
+                                        Viền vàng
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => updatePhotoById(selectedPhoto.id, { frame: 'borderless' })}
+                                        className={clsx(
+                                            "py-1 text-[10px] font-medium rounded border",
+                                            selectedPhoto.frame === 'borderless' ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-slate-200 text-slate-600"
+                                        )}
+                                    >
+                                        Không viền
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Delete this photo */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const updated = normalizedPhotos.filter(p => p.id !== selectedPhoto.id)
+                                    updatePhotos(updated)
+                                    setSelectedPhotoId(null)
+                                }}
+                                className="w-full py-1.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg flex items-center justify-center gap-1 transition-colors font-medium border border-red-200"
+                            >
+                                <Trash2 size={13} /> Xóa ảnh này
+                            </button>
                         </div>
                     ) : (
-                        <p className="text-center text-xs text-slate-400 py-4">Chưa có ảnh nào. Tải lên để bắt đầu.</p>
+                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
+                            <p className="text-xs text-slate-500 font-medium">Nhấp vào một ảnh trên bảng để tùy chỉnh</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">Xoay ngang/dọc, góc nghiêng, kích thước và thứ tự đè lớp</p>
+                        </div>
                     )}
 
-                    {(config.photos || []).length > 0 && (
-                        <p className="text-[10px] text-slate-400 text-center">
-                            {(config.photos || []).length} ảnh · Nhấn vào ảnh để xóa
-                        </p>
-                    )}
+                    {/* Photo List Thumbnails */}
+                    <div>
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                            <span>Danh sách ảnh ({normalizedPhotos.length})</span>
+                            <button
+                                type="button"
+                                onClick={autoArrangePhotos}
+                                className="text-[10px] text-indigo-600 hover:underline normal-case font-medium flex items-center gap-0.5"
+                            >
+                                <Sparkles size={11} /> Tự động xếp
+                            </button>
+                        </div>
+
+                        {normalizedPhotos.length > 0 ? (
+                            <div className="grid grid-cols-3 gap-2">
+                                {normalizedPhotos.map((photo, i) => {
+                                    const isSelected = selectedPhotoId === photo.id
+                                    return (
+                                        <div
+                                            key={photo.id || photo.url + i}
+                                            onClick={() => setSelectedPhotoId(photo.id)}
+                                            className={clsx(
+                                                "relative group aspect-square rounded-xl overflow-hidden border cursor-pointer transition-all",
+                                                isSelected ? "ring-2 ring-indigo-600 border-indigo-600 shadow-sm" : "border-slate-200 hover:border-indigo-300"
+                                            )}
+                                        >
+                                            <img
+                                                src={photo.url}
+                                                alt={`Ảnh ${i + 1}`}
+                                                className="w-full h-full object-cover"
+                                            />
+                                            <div className="absolute top-1 left-1 bg-black/60 backdrop-blur-sm text-white px-1.5 py-0.2 rounded text-[9px] font-mono">
+                                                #{i + 1}
+                                            </div>
+                                            <div className="absolute bottom-1 right-1 bg-black/60 backdrop-blur-sm text-amber-300 px-1 py-0.2 rounded text-[8px] font-mono">
+                                                {photo.rotation || 0}°
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        ) : (
+                            <p className="text-center text-xs text-slate-400 py-3">Chưa có ảnh nào. Tải lên để bắt đầu.</p>
+                        )}
+                    </div>
                 </div>
              )}
           </div>
@@ -1019,105 +1332,111 @@ export function DesignerPage() {
       </div>
 
       {/* Main Sandbox Area */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-slate-100 overflow-auto relative">
-         <div 
-            ref={canvasRef}
-            className="relative shadow-2xl ring-1 ring-slate-900/5"
-            style={{ width: config.width, height: config.height }}
-         >
-             {/* We use InvitationRenderer but we inject our own drag handlers by overriding the onElementClick */}
-             {/* Actually InvitationRenderer renders divs. To make them draggable, we need to wrap them OR let InvitationRenderer handle the specialized click/down */}
-             
-             {/* Re-implementing a simple render loop here for the Editor to wrap with Draggable */}
-             <div 
-                className="w-full h-full relative overflow-hidden bg-white"
-                style={{
-                    backgroundColor: config.background.color,
-                    backgroundImage: config.background.image ? `url(${normalizeUrl(config.background.image)})` : undefined,
-                }}
-                onClick={() => selectElement(null)}
-             >
-                 {/* Guides */}
-                 {guides.map((g, i) => (
-                    <div 
-                        key={i}
-                        className="absolute bg-pink-500 z-[60] pointer-events-none"
-                        style={{
-                            left: g.type === 'vertical' ? g.pos : 0,
-                            top: g.type === 'horizontal' ? g.pos : 0,
-                            width: g.type === 'vertical' ? '1px' : '100%',
-                            height: g.type === 'horizontal' ? '1px' : '100%',
-                            boxShadow: '0 0 2px rgba(255,255,255,0.5)' // enhance visibility
-                        }}
-                    />
-                 ))}
+      <div 
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        className="flex-1 flex flex-col items-center justify-start p-8 bg-slate-100 overflow-auto relative"
+      >
+        {activeTab === 'photos' ? (
+          /* Khoảnh Khắc Collage Canvas — rendered by isolated component for performance */
+          <PhotoCollageCanvas />
+        ) : (
+          /* Main Card Canvas */
+          <div 
+             ref={canvasRef}
+             className="relative shadow-2xl ring-1 ring-slate-900/5 my-auto"
+             style={{ width: config.width, height: config.height }}
+          >
+              <div 
+                 className="w-full h-full relative overflow-hidden bg-white"
+                 style={{
+                     backgroundColor: config.background.color,
+                     backgroundImage: config.background.image ? `url(${normalizeUrl(config.background.image)})` : undefined,
+                 }}
+                 onClick={() => selectElement(null)}
+              >
+                  {/* Guides */}
+                  {guides.map((g, i) => (
+                     <div 
+                         key={i}
+                         className="absolute bg-pink-500 z-[60] pointer-events-none"
+                         style={{
+                             left: g.type === 'vertical' ? g.pos : 0,
+                             top: g.type === 'horizontal' ? g.pos : 0,
+                             width: g.type === 'vertical' ? '1px' : '100%',
+                             height: g.type === 'horizontal' ? '1px' : '100%',
+                             boxShadow: '0 0 2px rgba(255,255,255,0.5)'
+                         }}
+                     />
+                  ))}
 
-                 {config.elements.map(el => (
-                    <div
-                        key={el.id}
-                        id={el.id}
-                        onClick={(e) => e.stopPropagation()}
-                        onMouseDown={(e) => handleMouseDown(e, el.id, el.x, el.y)}
-                        className={clsx(
-                            "absolute cursor-move select-none whitespace-pre-wrap hover:ring-1 hover:ring-blue-400",
-                            selectedElementId === el.id && "ring-2 ring-blue-600 z-50",
-                            el.type === 'button' && "flex items-center justify-center font-bold shadow-lg rounded-xl"
-                        )}
-                        style={{
-                            left: el.x,
-                            top: el.y,
-                            width: el.width,
-                            height: el.height,
-                            ...el.style,
-                            // Match defaults from InvitationRenderer for buttons
-                            ...(el.type === 'button' ? {
-                                backgroundColor: el.style.backgroundColor || '#064e3b',
-                                color: el.style.color || '#ffffff',
-                            } : {}),
-                            // In editor, we show placeholders for dynamic fields
-                            fontSize: el.style.fontSize, // Ensure px is handled
-                            transform: `rotate(${el.rotation || 0}deg)`
-                        }}
-                    >
-                        {el.type === 'dynamic' && el.field === 'full_name' ? '{Tên Khách Mời}' : (
-                            el.type === 'image' ? (
-                                normalizeUrl(el.content) ? (
-                                    <img src={normalizeUrl(el.content)} className="w-full h-full object-cover pointer-events-none" />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-slate-100 text-[10px] text-slate-400">No Image</div>
-                                )
-                            ) : el.content
-                        )}
+                  {config.elements.map(el => (
+                     <div
+                         key={el.id}
+                         id={el.id}
+                         onClick={(e) => e.stopPropagation()}
+                         onMouseDown={(e) => handleMouseDown(e, el.id, el.x, el.y)}
+                         className={clsx(
+                             "absolute cursor-move select-none whitespace-pre-wrap hover:ring-1 hover:ring-blue-400",
+                             selectedElementId === el.id && "ring-2 ring-blue-600 z-50",
+                             el.type === 'button' && "flex items-center justify-center font-bold shadow-lg rounded-xl"
+                         )}
+                         style={{
+                             left: el.x,
+                             top: el.y,
+                             width: el.width,
+                             height: el.height,
+                             ...el.style,
+                             ...(el.type === 'button' ? {
+                                 backgroundColor: el.style.backgroundColor || '#064e3b',
+                                 color: el.style.color || '#ffffff',
+                             } : {}),
+                             fontSize: el.style.fontSize,
+                             transform: `rotate(${el.rotation || 0}deg)`
+                         }}
+                     >
+                         {el.type === 'dynamic' && el.field === 'full_name' ? '{Tên Khách Mời}' : (
+                             el.type === 'image' ? (
+                                 normalizeUrl(el.content) ? (
+                                     <img src={normalizeUrl(el.content)} className="w-full h-full object-cover pointer-events-none" />
+                                 ) : (
+                                     <div className="w-full h-full flex items-center justify-center bg-slate-100 text-[10px] text-slate-400">No Image</div>
+                                 )
+                             ) : el.content
+                         )}
 
-                        {/* Resize Handles when element is selected */}
-                        {selectedElementId === el.id && (
-                            <>
-                                <div
-                                    onMouseDown={(e) => handleResizeStart(e, 'nw', el)}
-                                    className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-blue-600 rounded-full cursor-nwse-resize z-10 shadow-sm hover:scale-125 transition-transform"
-                                />
-                                <div
-                                    onMouseDown={(e) => handleResizeStart(e, 'ne', el)}
-                                    className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-blue-600 rounded-full cursor-nesw-resize z-10 shadow-sm hover:scale-125 transition-transform"
-                                />
-                                <div
-                                    onMouseDown={(e) => handleResizeStart(e, 'sw', el)}
-                                    className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-blue-600 rounded-full cursor-nesw-resize z-10 shadow-sm hover:scale-125 transition-transform"
-                                />
-                                <div
-                                    onMouseDown={(e) => handleResizeStart(e, 'se', el)}
-                                    className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-blue-600 rounded-full cursor-nwse-resize z-10 shadow-sm hover:scale-125 transition-transform"
-                                />
-                            </>
-                        )}
-                    </div>
-                 ))}
-             </div>
-         </div>
+                         {/* Resize Handles when element is selected */}
+                         {selectedElementId === el.id && (
+                             <>
+                                 <div
+                                     onMouseDown={(e) => handleResizeStart(e, 'nw', el)}
+                                     className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-blue-600 rounded-full cursor-nwse-resize z-10 shadow-sm hover:scale-125 transition-transform"
+                                 />
+                                 <div
+                                     onMouseDown={(e) => handleResizeStart(e, 'ne', el)}
+                                     className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-blue-600 rounded-full cursor-nesw-resize z-10 shadow-sm hover:scale-125 transition-transform"
+                                 />
+                                 <div
+                                     onMouseDown={(e) => handleResizeStart(e, 'sw', el)}
+                                     className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-blue-600 rounded-full cursor-nesw-resize z-10 shadow-sm hover:scale-125 transition-transform"
+                                 />
+                                 <div
+                                     onMouseDown={(e) => handleResizeStart(e, 'se', el)}
+                                     className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-blue-600 rounded-full cursor-nwse-resize z-10 shadow-sm hover:scale-125 transition-transform"
+                                 />
+                             </>
+                         )}
+                     </div>
+                  ))}
+              </div>
+          </div>
+        )}
          
-         <div className="absolute bottom-4 right-4 text-xs text-slate-400">
-            Kích thước: {config.width} x {config.height} px
-         </div>
+        {activeTab !== 'photos' && (
+          <div className="absolute bottom-4 right-4 text-xs text-slate-400">
+             Kích thước: {config.width} x {config.height} px
+          </div>
+        )}
       </div>
 
 

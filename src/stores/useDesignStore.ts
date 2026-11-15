@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { DEFAULT_CONFIG } from '@/types/design'
-import type { DesignConfig, DesignElement } from '@/types/design'
+import type { DesignConfig, DesignElement, PhotoItem } from '@/types/design'
 import { useToastStore } from '@/stores/useGuestStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { supabase, INVITATION_ASSETS_BUCKET } from '@/lib/supabase'
@@ -34,6 +34,12 @@ function normalizeConfigUrls(data: DesignConfig): DesignConfig {
       return el
     })
   }
+  if (data.photos) {
+    data.photos = data.photos.map((p) => {
+      if (typeof p === 'string') return normalizeUrl(p) ?? p
+      return { ...p, url: normalizeUrl(p.url) ?? p.url }
+    })
+  }
   return data
 }
 
@@ -62,7 +68,8 @@ interface DesignState {
   removeElement: (id: string) => void
   updateBackground: (bg: Partial<DesignConfig['background']>) => void
   updateMusic: (music: Partial<DesignConfig['music']>, pushHistory?: boolean) => void
-  updatePhotos: (photos: string[]) => void
+  updatePhotos: (photos: PhotoItem[]) => void
+  updatePhotoLayout: (layout: 'collage' | 'grid') => void
   moveElement: (id: string, x: number, y: number) => void
 
   bringToFront: (id: string) => void
@@ -234,8 +241,16 @@ export const useDesignStore = create<DesignState>((set, get) => ({
   },
 
   updatePhotos: (photos) => {
+    get().pushToHistory()
     set((state) => ({
       config: { ...state.config, photos },
+    }))
+  },
+
+  updatePhotoLayout: (layout) => {
+    get().pushToHistory()
+    set((state) => ({
+      config: { ...state.config, photoLayout: layout },
     }))
   },
 

@@ -27,6 +27,59 @@ export interface DesignElement {
   mapLng?: number | string
 }
 
+export type PhotoFrameStyle = 'polaroid' | 'gold' | 'borderless'
+
+export interface MomentPhoto {
+  id: string
+  url: string
+  x: number
+  y: number
+  width: number
+  height?: number
+  rotation: number // in degrees
+  zIndex: number
+  frame?: PhotoFrameStyle
+}
+
+export type PhotoItem = string | MomentPhoto
+
+export function normalizeMomentPhoto(
+  item: PhotoItem,
+  index: number,
+  _total: number = 1
+): MomentPhoto {
+  if (typeof item !== 'string' && item && item.url) {
+    return {
+      id: item.id || `photo_${index}`,
+      url: item.url,
+      x: typeof item.x === 'number' ? item.x : (index % 2 === 0 ? 25 : 185),
+      y: typeof item.y === 'number' ? item.y : 20 + index * 125,
+      width: item.width || 175,
+      height: item.height,
+      rotation: typeof item.rotation === 'number' ? item.rotation : (index % 2 === 0 ? -6 : 5),
+      zIndex: typeof item.zIndex === 'number' ? item.zIndex : index + 1,
+      frame: item.frame || 'polaroid',
+    }
+  }
+
+  const url = typeof item === 'string' ? item : ''
+  const isLeft = index % 2 === 0
+  const defaultRotation = isLeft ? -7 + ((index * 3) % 9) : 5 - ((index * 2) % 7)
+  const defaultX = isLeft ? 25 + (index % 3) * 8 : 185 - (index % 3) * 8
+  const defaultY = 20 + index * 125
+
+  return {
+    id: `photo_${index}_${url.slice(-8)}`,
+    url,
+    x: defaultX,
+    y: defaultY,
+    width: 175,
+    rotation: defaultRotation,
+    zIndex: index + 1,
+    frame: 'polaroid',
+  }
+}
+
 export interface DesignConfig {
   background: {
     color: string
@@ -43,7 +96,9 @@ export interface DesignConfig {
     endTime?: number   // in seconds
   }
   // Personal photo album shown in the scrollable invitation page
-  photos?: string[]
+  photos?: PhotoItem[]
+  photoLayout?: 'collage' | 'grid'
+  photoCanvasHeight?: number
 }
 
 // Default config to seed the editor (The current Panda themeish)
