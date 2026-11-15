@@ -8,6 +8,7 @@ import {
 import { normalizeMomentPhoto } from '@/types/design'
 import type { MomentPhoto, PhotoFrameStyle } from '@/types/design'
 import { InvitationRenderer } from '@/components/InvitationRenderer'
+import { PhotoCollageCanvas } from '@/components/designer/PhotoCollageCanvas'
 import clsx from 'clsx'
 
 const FONTS = [
@@ -179,7 +180,7 @@ export function MobileDesigner({
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-100 pb-24">
+    <div className="flex flex-col min-h-screen overflow-x-hidden bg-slate-100 pb-24">
       {/* Top Mobile Bar */}
       <div className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-2">
@@ -203,8 +204,9 @@ export function MobileDesigner({
         </div>
       </div>
 
-      {/* Mini Preview Window */}
-      <div className="bg-slate-900/5 py-4 px-2 flex justify-center items-center overflow-hidden border-b border-slate-200">
+      {/* Mini Preview Window — focus on the editing canvas in Photos tab */}
+      {activeTab !== 'photos' && (
+      <div className="order-2 bg-slate-900/5 py-4 px-2 flex justify-center items-center overflow-hidden border-b border-slate-200">
         <div 
           className="relative bg-white shadow-xl rounded-lg overflow-hidden shrink-0 origin-top"
           style={{
@@ -228,9 +230,10 @@ export function MobileDesigner({
           </div>
         </div>
       </div>
+      )}
 
       {/* Tabs Switcher */}
-      <div className="sticky top-[45px] z-20 bg-white border-b border-slate-200 flex px-2 overflow-x-auto no-scrollbar">
+      <div className="order-1 sticky top-12 z-20 bg-white border-b border-slate-200 flex px-2 overflow-x-auto no-scrollbar">
         {[
           { key: 'content', label: 'Nội dung', icon: Type },
           { key: 'theme', label: 'Phông nền', icon: Layers },
@@ -261,7 +264,10 @@ export function MobileDesigner({
       </div>
 
       {/* Tab Panels */}
-      <div className="p-4 space-y-4 max-w-lg mx-auto w-full">
+      <div className={clsx(
+        'order-3 min-w-0 max-w-lg mx-auto w-full overflow-x-hidden',
+        activeTab === 'photos' ? 'p-0 space-y-4' : 'p-4 space-y-4'
+      )}>
         {/* ── TAB 1: CONTENT (Chỉnh sửa text / layers) ── */}
         {activeTab === 'content' && (
           <div className="space-y-4">
@@ -463,7 +469,7 @@ export function MobileDesigner({
 
         {/* ── TAB 2: THEME (Phông nền & Màu nền) ── */}
         {activeTab === 'theme' && (
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <div className="space-y-4">
             <div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Màu nền</p>
               <div className="flex items-center gap-3">
@@ -517,7 +523,7 @@ export function MobileDesigner({
 
         {/* ── TAB 3: MUSIC (Nhạc nền) ── */}
         {activeTab === 'music' && (
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <div className="space-y-4">
             <div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nhạc nền thiệp</p>
               <p className="text-[11px] text-slate-500">Bài hát sẽ tự động phát khi khách mời mở thiệp.</p>
@@ -567,7 +573,7 @@ export function MobileDesigner({
 
         {/* ── TAB 4: PHOTOS (Album ảnh kỷ niệm) ── */}
         {activeTab === 'photos' && (
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <div className="space-y-4">
             <div>
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Ảnh khoảnh khắc</p>
               <p className="text-[11px] text-slate-400 mb-2">Tự do xoay góc, chỉnh kích thước và độ đè lớp (ảnh đè lên nhau).</p>
@@ -616,9 +622,14 @@ export function MobileDesigner({
               />
             </label>
 
+            {/* Direct touch canvas for positioning photos on mobile */}
+            <div className="px-4">
+              <PhotoCollageCanvas />
+            </div>
+
             {/* Selected Photo Inspector on Mobile */}
             {selectedPhoto && (
-              <div className="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-3 animate-in fade-in duration-150">
+              <div className="hidden p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-3 animate-in fade-in duration-150">
                 <div className="flex items-center justify-between border-b border-indigo-100 pb-2">
                   <div className="flex items-center gap-2">
                     <img src={selectedPhoto.url} alt="Ảnh chọn" className="w-8 h-8 rounded object-cover border border-indigo-200" />

@@ -1,8 +1,8 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useDesignStore } from '@/stores/useDesignStore'
 import { normalizeMomentPhoto } from '@/types/design'
 import type { MomentPhoto } from '@/types/design'
-import { RotateCcw, RotateCw, Layers, Trash2, Sparkles, Images } from 'lucide-react'
+import { Layers, Trash2, Sparkles, Images } from 'lucide-react'
 import clsx from 'clsx'
 
 /**
@@ -14,12 +14,24 @@ export function PhotoCollageCanvas() {
 
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
+  const canvasHostRef = useRef<HTMLDivElement>(null)
+  const [canvasScale, setCanvasScale] = useState(1)
 
   // Drag state — all in refs, never causes re-render during drag
   const isDraggingRef = useRef(false)
   const dragOffsetRef = useRef({ x: 0, y: 0 })
   const dragPhotoIdRef = useRef<string | null>(null)
   const dragStartPhotosRef = useRef<MomentPhoto[]>([])
+  const interactionRef = useRef<{
+    type: 'resize' | 'rotate'
+    pointerId: number
+    photo: MomentPhoto
+    startX: number
+    startY: number
+    centerX: number
+    centerY: number
+    startAngle: number
+  } | null>(null)
 
   const normalizedPhotos = useMemo(
     () => (config.photos || []).map((p, i) => normalizeMomentPhoto(p, i, config.photos?.length || 1)),
@@ -29,6 +41,17 @@ export function PhotoCollageCanvas() {
   const selectedPhoto = useMemo(
     () => normalizedPhotos.find(p => p.id === selectedPhotoId) ?? null,
     [normalizedPhotos, selectedPhotoId]
+  )
+
+  // Canvas height derived from photo positions
+  const canvasHeight = useMemo(() => {
+    if (normalizedPhotos.length === 0) return 520
+    return Math.max(...normalizedPhotos.map(p => p.y + (p.height || p.width * 1.25)), 520) + 80
+  }, [normalizedPhotos])
+
+  const canvasDesignWidth = useMemo(
+    () => normalizedPhotos.reduce((max, photo) => Math.max(max, photo.x + photo.width + 24), 400),
+    [normalizedPhotos]
   )
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -69,74 +92,152 @@ export function PhotoCollageCanvas() {
 
   // ─── Drag handlers (no setState during drag) ──────────────────────────────
 
-  const handleMouseDown = useCallback((e: React.MouseEvent, photo: MomentPhoto) => {
+  const handlePointerDown = useCallback((e: React.PointerEvent, photo: MomentPhoto) => {
     e.stopPropagation()
     if (!canvasRef.current) return
     const rect = canvasRef.current.getBoundingClientRect()
+    const point = getCanvasPoint(e, rect)
     isDraggingRef.current = true
     dragPhotoIdRef.current = photo.id
     dragOffsetRef.current = {
-      x: e.clientX - rect.left - photo.x,
-      y: e.clientY - rect.top - photo.y,
+      x: point.x - photo.x,
+      y: point.y - photo.y,
     }
     dragStartPhotosRef.current = normalizedPhotos
     setSelectedPhotoId(photo.id)
-  }, [normalizedPhotos])
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }, [canvasScale, normalizedPhotos])
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+  const handleResizeStart = useCallback((e: React.PointerEvent, photo: MomentPhoto) => {
+    e.stopPropagation()
+    interactionRef.current = {
+      type: 'resize',
+      pointerId: e.pointerId,
+      photo,
+      startX: e.clientX,
+      startY: e.clientY,
+      centerX: 0,
+      centerY: 0,
+      startAngle: 0,
+    }
+    setSelectedPhotoId(photo.id)
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }, [])
+
+  const handleRotateStart = useCallback((e: React.PointerEvent, photo: MomentPhoto) => {
+    e.stopPropagation()
+    const element = document.getElementById(photo.id)
+    const rect = element?.getBoundingClientRect()
+    if (!rect) return
+    interactionRef.current = {
+      type: 'rotate',
+      pointerId: e.pointerId,
+      photo,
+      startX: e.clientX,
+      startY: e.clientY,
+      centerX: rect.left + rect.width / 2,
+      centerY: rect.top + rect.height / 2,
+      startAngle: Math.atan2(e.clientY - (rect.top + rect.height / 2), e.clientX - (rect.left + rect.width / 2)),
+    }
+    setSelectedPhotoId(photo.id)
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }, [])
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    const interaction = interactionRef.current
+    if (interaction && interaction.pointerId === e.pointerId) {
+      const element = document.getElementById(interaction.photo.id)
+      if (!element) return
+      if (interaction.type === 'resize') {
+        const delta = ((e.clientX - interaction.startX) + (e.clientY - interaction.startY)) / (2 * canvasScale)
+        const width = Math.min(320, Math.max(110, Math.round(interaction.photo.width + delta)))
+        element.style.width = `${width}px`
+      } else {
+        const angle = Math.atan2(e.clientY - interaction.centerY, e.clientX - interaction.centerX)
+        const rotation = interaction.photo.rotation + ((angle - interaction.startAngle) * 180) / Math.PI
+        element.style.transform = `rotate(${rotation}deg)`
+      }
+      return
+    }
     if (!isDraggingRef.current || !dragPhotoIdRef.current || !canvasRef.current) return
     const rect = canvasRef.current.getBoundingClientRect()
+    const point = getCanvasPoint(e, rect)
     const el = document.getElementById(dragPhotoIdRef.current)
     const elW = el ? el.offsetWidth : 0
     const elH = el ? el.offsetHeight : 0
-    const canvasW = rect.width
-    const canvasH = rect.height
     // Clamp within canvas bounds
-    const x = Math.min(canvasW - elW, Math.max(0, Math.round(e.clientX - rect.left - dragOffsetRef.current.x)))
-    const y = Math.min(canvasH - elH, Math.max(0, Math.round(e.clientY - rect.top - dragOffsetRef.current.y)))
+    const x = Math.min(canvasDesignWidth - elW, Math.max(0, Math.round(point.x - dragOffsetRef.current.x)))
+    const y = Math.min(canvasHeight - elH, Math.max(0, Math.round(point.y - dragOffsetRef.current.y)))
     // Move DOM element directly — no React state, no re-render
     if (el) {
       el.style.left = `${x}px`
       el.style.top = `${y}px`
     }
-  }, [])
+  }, [canvasDesignWidth, canvasHeight, canvasScale])
 
-  const handleMouseUp = useCallback((e: React.MouseEvent) => {
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    const interaction = interactionRef.current
+    if (interaction && interaction.pointerId === e.pointerId) {
+      const element = document.getElementById(interaction.photo.id)
+      if (element) {
+        if (interaction.type === 'resize') {
+          const delta = ((e.clientX - interaction.startX) + (e.clientY - interaction.startY)) / (2 * canvasScale)
+          updatePhoto(interaction.photo.id, {
+            width: Math.min(320, Math.max(110, Math.round(interaction.photo.width + delta))),
+          })
+        } else {
+          const angle = Math.atan2(e.clientY - interaction.centerY, e.clientX - interaction.centerX)
+          updatePhoto(interaction.photo.id, {
+            rotation: interaction.photo.rotation + ((angle - interaction.startAngle) * 180) / Math.PI,
+          })
+        }
+      }
+      interactionRef.current = null
+      return
+    }
     if (!isDraggingRef.current || !dragPhotoIdRef.current || !canvasRef.current) return
     const rect = canvasRef.current.getBoundingClientRect()
+    const point = getCanvasPoint(e, rect)
     const el = document.getElementById(dragPhotoIdRef.current)
     const elW = el ? el.offsetWidth : 0
     const elH = el ? el.offsetHeight : 0
-    const canvasW = rect.width
-    const canvasH = rect.height
-    const x = Math.min(canvasW - elW, Math.max(0, Math.round(e.clientX - rect.left - dragOffsetRef.current.x)))
-    const y = Math.min(canvasH - elH, Math.max(0, Math.round(e.clientY - rect.top - dragOffsetRef.current.y)))
+    const x = Math.min(canvasDesignWidth - elW, Math.max(0, Math.round(point.x - dragOffsetRef.current.x)))
+    const y = Math.min(canvasHeight - elH, Math.max(0, Math.round(point.y - dragOffsetRef.current.y)))
     // Commit final position to store once
     const id = dragPhotoIdRef.current
     const list = dragStartPhotosRef.current.map(p => p.id === id ? { ...p, x, y } : p)
     updatePhotos(list)
     isDraggingRef.current = false
     dragPhotoIdRef.current = null
-  }, [updatePhotos])
+  }, [canvasDesignWidth, canvasHeight, canvasScale, updatePhoto, updatePhotos])
 
-  // Canvas height derived from photo positions
-  const canvasHeight = useMemo(() => {
-    if (normalizedPhotos.length === 0) return 520
-    return Math.max(...normalizedPhotos.map(p => p.y + (p.height || p.width * 1.25)), 520) + 80
-  }, [normalizedPhotos])
+  useEffect(() => {
+    const host = canvasHostRef.current
+    if (!host) return
+    const updateScale = () => setCanvasScale(Math.min(1, host.clientWidth / canvasDesignWidth))
+    updateScale()
+    const observer = new ResizeObserver(updateScale)
+    observer.observe(host)
+    return () => observer.disconnect()
+  }, [canvasDesignWidth])
+
+  const getCanvasPoint = (event: React.PointerEvent, rect: DOMRect) => ({
+    x: (event.clientX - rect.left) / canvasScale,
+    y: (event.clientY - rect.top) / canvasScale,
+  })
 
   // ─── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div
       className="flex flex-col items-center gap-4 w-full max-w-[500px]"
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
     >
       {/* Toolbar */}
-      <div className="bg-white px-4 py-2.5 rounded-xl shadow-xs border border-slate-200 flex items-center justify-between gap-3 w-full">
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+      <div className="bg-white px-4 py-2.5 rounded-xl shadow-xs border border-slate-200 flex items-center justify-between gap-3 w-full overflow-x-auto">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-700 shrink-0">
           <Sparkles size={15} className="text-amber-500" />
           <span>Bảng thiết kế Khoảnh Khắc</span>
         </div>
@@ -149,29 +250,58 @@ export function PhotoCollageCanvas() {
             <Sparkles size={11} /> Xếp tự động
           </button>
           {selectedPhotoId && (
-            <button
-              type="button"
-              onClick={() => setSelectedPhotoId(null)}
-              className="px-2 py-1 text-[11px] font-medium text-slate-500 hover:bg-slate-100 rounded-lg"
-            >
-              Bỏ chọn
-            </button>
+            <>
+              <div className="flex items-center gap-1 border-l border-slate-200 pl-2 shrink-0">
+                {(['polaroid', 'gold', 'borderless'] as const).map(frame => (
+                  <button
+                    key={frame}
+                    type="button"
+                    onClick={() => selectedPhoto && updatePhoto(selectedPhoto.id, { frame })}
+                    className={clsx(
+                      'px-1.5 py-1 text-[10px] rounded border',
+                      selectedPhoto?.frame === frame
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300'
+                    )}
+                    title={`Khung ${frame}`}
+                  >
+                    {frame === 'polaroid' ? 'Ảnh' : frame === 'gold' ? 'Vàng' : 'Trơn'}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedPhotoId(null)}
+                className="px-2 py-1 text-[11px] font-medium text-slate-500 hover:bg-slate-100 rounded-lg"
+              >
+                Bỏ chọn
+              </button>
+            </>
           )}
         </div>
       </div>
 
       {/* Canvas — overflow:visible so floating toolbars above photos are not clipped */}
+      <div ref={canvasHostRef} className="relative w-full min-w-0 overflow-x-hidden">
+      <div
+        className="relative mx-auto"
+        style={{ width: canvasDesignWidth * canvasScale, height: canvasHeight * canvasScale }}
+      >
       <div
         ref={canvasRef}
         onClick={() => setSelectedPhotoId(null)}
         className="relative shadow-2xl rounded-2xl select-none w-full"
         style={{
-          minHeight: 520,
+          width: canvasDesignWidth,
           height: canvasHeight,
+          transform: `translateX(-50%) scale(${canvasScale})`,
+          transformOrigin: 'top center',
+          left: '50%',
           backgroundColor: '#1e1b4b',
           backgroundImage: 'url(https://www.transparenttextures.com/patterns/stardust.png)',
           outline: '1px solid #1e293b', // border without overflow-hidden
           overflow: 'visible',
+          touchAction: 'none',
         }}
       >
         {/* Photos */}
@@ -185,7 +315,7 @@ export function PhotoCollageCanvas() {
               key={photo.id || photo.url + i}
               id={photo.id}
               onClick={e => { e.stopPropagation(); setSelectedPhotoId(photo.id) }}
-              onMouseDown={e => handleMouseDown(e, photo)}
+              onPointerDown={e => handlePointerDown(e, photo)}
               className={clsx(
                 'absolute cursor-move select-none group',
                 isSelected && 'ring-2 ring-indigo-500 shadow-2xl',
@@ -207,26 +337,8 @@ export function PhotoCollageCanvas() {
               {isSelected && (
                 <div
                   onClick={e => e.stopPropagation()}
-                  className="absolute -top-11 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-black/90 backdrop-blur-md px-2.5 py-1 rounded-full text-white shadow-2xl whitespace-nowrap text-[10px]"
+                    className="absolute -top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-black/90 backdrop-blur-md px-2.5 py-1 rounded-full text-white shadow-2xl whitespace-nowrap text-[10px]"
                 >
-                  <button type="button" title="Xoay -90°"
-                    onClick={() => updatePhoto(photo.id, { rotation: ((photo.rotation || 0) - 90) % 360 })}
-                    className="p-1 hover:bg-white/20 rounded-full transition-colors"
-                  ><RotateCcw size={12} /></button>
-                  <button type="button"
-                    onClick={() => updatePhoto(photo.id, { rotation: (photo.rotation || 0) - 15 })}
-                    className="px-1.5 py-0.5 hover:bg-white/20 rounded font-mono text-[9px]"
-                  >-15°</button>
-                  <span className="text-amber-400 font-bold px-1">{photo.rotation || 0}°</span>
-                  <button type="button"
-                    onClick={() => updatePhoto(photo.id, { rotation: (photo.rotation || 0) + 15 })}
-                    className="px-1.5 py-0.5 hover:bg-white/20 rounded font-mono text-[9px]"
-                  >+15°</button>
-                  <button type="button" title="Xoay +90°"
-                    onClick={() => updatePhoto(photo.id, { rotation: ((photo.rotation || 0) + 90) % 360 })}
-                    className="p-1 hover:bg-white/20 rounded-full transition-colors"
-                  ><RotateCw size={12} /></button>
-                  <div className="w-px h-3 bg-white/20 mx-0.5" />
                   <button type="button" title="Lên trên cùng"
                     onClick={() => bringToFront(photo.id)}
                     className="px-1.5 py-0.5 hover:bg-white/20 rounded text-[9px] font-medium"
@@ -241,6 +353,25 @@ export function PhotoCollageCanvas() {
                     className="p-1 text-red-400 hover:text-red-300 hover:bg-white/10 rounded-full"
                   ><Trash2 size={11} /></button>
                 </div>
+              )}
+
+              {isSelected && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Xoay ảnh"
+                    onPointerDown={e => handleRotateStart(e, photo)}
+                    className="absolute -top-7 left-1/2 -translate-x-1/2 z-50 h-5 w-5 rounded-full bg-indigo-600 text-white text-[11px] shadow-lg cursor-grab active:cursor-grabbing"
+                  >
+                    ↻
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Đổi kích thước ảnh"
+                    onPointerDown={e => handleResizeStart(e, photo)}
+                    className="absolute -bottom-2 -right-2 z-50 h-5 w-5 rounded-sm border-2 border-white bg-indigo-600 shadow-lg cursor-nwse-resize"
+                  />
+                </>
               )}
 
               <div className={clsx(
@@ -274,10 +405,11 @@ export function PhotoCollageCanvas() {
           </div>
         )}
       </div>
+      </div>
 
-      {/* Selected photo inspector (sidebar-like, below canvas) */}
+      {/* Selected photo inspector — floating over the canvas corner */}
       {selectedPhoto && (
-        <div className="w-full bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+        <div className="hidden">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <img src={selectedPhoto.url} alt="" className="w-8 h-8 rounded object-cover border border-indigo-200" />
@@ -352,8 +484,9 @@ export function PhotoCollageCanvas() {
           ><Trash2 size={13} /> Xóa ảnh này</button>
         </div>
       )}
+      </div>
 
-      <p className="text-xs text-slate-400 text-center">
+      <p className="text-xs text-slate-400 text-center order-3">
         Kéo thả ảnh để di chuyển · Click vào ảnh để xoay, chỉnh kích thước và thứ tự đè lớp
       </p>
     </div>
