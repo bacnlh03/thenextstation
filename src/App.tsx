@@ -1,14 +1,19 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { Sidebar } from './components/ui/Sidebar'
-import { GuestsPage } from './pages/GuestsPage'
-import { WishesPage } from './pages/WishesPage'
-import { InvitationPage } from './pages/InvitationPage'
-import { DesignerPage } from './pages/DesignerPage'
-import { LoginPage } from './pages/LoginPage'
 import { ToastNotification } from './components/ui/ToastNotification'
 import { ProtectedRoute } from './components/ui/ProtectedRoute'
+
+const GuestsPage = lazy(() => import('./pages/GuestsPage').then(m => ({ default: m.GuestsPage })))
+const WishesPage = lazy(() => import('./pages/WishesPage').then(m => ({ default: m.WishesPage })))
+const InvitationPage = lazy(() => import('./pages/InvitationPage').then(m => ({ default: m.InvitationPage })))
+const DesignerPage = lazy(() => import('./pages/DesignerPage').then(m => ({ default: m.DesignerPage })))
+const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
+
+function PageLoading() {
+  return <div className="min-h-screen w-full bg-slate-50" aria-label="Đang tải trang" />
+}
 
 function App() {
   const initialize = useAuthStore((s) => s.initialize)
@@ -19,22 +24,24 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="flex min-h-screen w-full bg-slate-50">
-        <Routes>
-          {/* Public routes — no sidebar, no auth */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/invitation" element={<InvitationPage />} />
-          <Route path="/to/:slug" element={<InvitationPage />} />
+      <Suspense fallback={<PageLoading />}>
+        <div className="flex min-h-screen w-full bg-slate-50">
+          <Routes>
+            {/* Public routes — no sidebar, no auth */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/invitation" element={<InvitationPage />} />
+            <Route path="/to/:slug" element={<InvitationPage />} />
 
-          {/* Protected admin routes */}
-          <Route path="/*" element={
-            <ProtectedRoute>
-              <AdminLayout />
-            </ProtectedRoute>
-          } />
-        </Routes>
-        <ToastNotification />
-      </div>
+            {/* Protected admin routes */}
+            <Route path="/*" element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            } />
+          </Routes>
+          <ToastNotification />
+        </div>
+      </Suspense>
     </BrowserRouter>
   )
 }

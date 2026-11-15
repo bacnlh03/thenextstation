@@ -22,6 +22,7 @@ export function PhotoCollageCanvas() {
   const dragOffsetRef = useRef({ x: 0, y: 0 })
   const dragPhotoIdRef = useRef<string | null>(null)
   const dragStartPhotosRef = useRef<MomentPhoto[]>([])
+  const hasDragMovedRef = useRef(false)
   const interactionRef = useRef<{
     type: 'resize' | 'rotate'
     pointerId: number
@@ -98,6 +99,7 @@ export function PhotoCollageCanvas() {
     const rect = canvasRef.current.getBoundingClientRect()
     const point = getCanvasPoint(e, rect)
     isDraggingRef.current = true
+    hasDragMovedRef.current = false
     dragPhotoIdRef.current = photo.id
     dragOffsetRef.current = {
       x: point.x - photo.x,
@@ -168,6 +170,7 @@ export function PhotoCollageCanvas() {
     // Clamp within canvas bounds
     const x = Math.min(canvasDesignWidth - elW, Math.max(0, Math.round(point.x - dragOffsetRef.current.x)))
     const y = Math.min(canvasHeight - elH, Math.max(0, Math.round(point.y - dragOffsetRef.current.y)))
+    hasDragMovedRef.current = true
     // Move DOM element directly — no React state, no re-render
     if (el) {
       el.style.left = `${x}px`
@@ -205,10 +208,13 @@ export function PhotoCollageCanvas() {
     const y = Math.min(canvasHeight - elH, Math.max(0, Math.round(point.y - dragOffsetRef.current.y)))
     // Commit final position to store once
     const id = dragPhotoIdRef.current
-    const list = dragStartPhotosRef.current.map(p => p.id === id ? { ...p, x, y } : p)
-    updatePhotos(list)
+    if (hasDragMovedRef.current) {
+      const list = dragStartPhotosRef.current.map(p => p.id === id ? { ...p, x, y } : p)
+      updatePhotos(list)
+    }
     isDraggingRef.current = false
     dragPhotoIdRef.current = null
+    hasDragMovedRef.current = false
   }, [canvasDesignWidth, canvasHeight, canvasScale, updatePhoto, updatePhotos])
 
   useEffect(() => {
@@ -282,7 +288,7 @@ export function PhotoCollageCanvas() {
       </div>
 
       {/* Canvas — overflow:visible so floating toolbars above photos are not clipped */}
-      <div ref={canvasHostRef} className="relative w-full min-w-0 overflow-x-hidden">
+      <div ref={canvasHostRef} className="relative w-full min-w-0 overflow-visible">
       <div
         className="relative mx-auto"
         style={{ width: canvasDesignWidth * canvasScale, height: canvasHeight * canvasScale }}

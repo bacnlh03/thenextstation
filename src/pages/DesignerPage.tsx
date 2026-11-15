@@ -61,7 +61,6 @@ export function DesignerPage() {
 
   // Photos Collage Studio State
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null)
-  const collageCanvasRef = useRef<HTMLDivElement>(null)
 
   const normalizedPhotos: MomentPhoto[] = useMemo(
     () => (config.photos || []).map((p, i) => normalizeMomentPhoto(p, i, config.photos?.length || 1)),
@@ -100,10 +99,6 @@ export function DesignerPage() {
     const current = normalizedPhotos.find(p => p.id === id)
     if (!current) return
     updatePhotoById(id, { zIndex: Math.max(1, (current.zIndex || 1) + step) })
-  }
-
-  const handlePhotoMouseDown = (_e: React.MouseEvent, _photo: MomentPhoto) => {
-    // Photo drag is now handled inside PhotoCollageCanvas component
   }
 
   const autoArrangePhotos = () => {
