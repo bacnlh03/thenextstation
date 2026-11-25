@@ -13,6 +13,7 @@ export function MealInviteSection({ invite }: { invite: NonNullable<DesignConfig
       <h2 className="text-2xl font-semibold tracking-wide text-[#fef3c7]" style={{ fontFamily: 'Playfair Display, serif' }}>{invite.title}</h2>
       <p className="mt-4 text-sm leading-relaxed text-[#cbd5e1] whitespace-pre-wrap" style={{ fontFamily: 'Montserrat, sans-serif' }}>{invite.content}</p>
       {hasLocation && <button type="button" onClick={() => setShowMap(true)} className="mt-6 inline-flex items-center gap-2 rounded-full border border-[#fcd34d]/35 px-4 py-2.5 text-xs text-[#fcd34d] hover:bg-[#fcd34d]/10 transition-colors"><MapPin size={15} />{invite.address || 'Xem địa điểm dùng bữa'}</button>}
+      {invite.note?.trim() && <p className="mt-3 text-xs leading-relaxed text-[#94a3b8] whitespace-pre-wrap" style={{ fontFamily: 'Montserrat, sans-serif' }}>{invite.note}</p>}
     </div>
     {showMap && <MapModal lat={invite.lat} lng={invite.lng} query={invite.address} label={invite.address} onClose={() => setShowMap(false)} />}
   </>

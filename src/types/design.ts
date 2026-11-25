@@ -109,6 +109,7 @@ export interface DesignConfig {
     title: string
     content: string
     address: string
+    note?: string
     lat?: number | string
     lng?: number | string
   }
@@ -130,6 +131,7 @@ export const DEFAULT_CONFIG: DesignConfig = {
     title: 'Mời đi ăn cùng nhau',
     content: 'Sau buổi lễ, mình thân mời bạn cùng dùng bữa và chia sẻ thêm những khoảnh khắc vui nhé!',
     address: '',
+    note: '',
     lat: '',
     lng: '',
   },

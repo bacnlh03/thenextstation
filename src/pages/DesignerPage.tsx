@@ -880,6 +880,7 @@ export function DesignerPage() {
                     <label className="block text-xs font-semibold text-slate-600">Tiêu đề<input value={config.mealInvite?.title ?? ''} onChange={(e) => updateMealInvite({ title: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="Mời đi ăn cùng nhau" /></label>
                     <label className="block text-xs font-semibold text-slate-600">Nội dung<textarea value={config.mealInvite?.content ?? ''} onChange={(e) => updateMealInvite({ content: e.target.value })} rows={5} className="mt-1 w-full resize-none rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="Nội dung lời mời..." /></label>
                     <label className="block text-xs font-semibold text-slate-600">Địa chỉ<input value={config.mealInvite?.address ?? ''} onChange={(e) => updateMealInvite({ address: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="Nhà hàng / địa chỉ" /></label>
+                    <label className="block text-xs font-semibold text-slate-600">Ghi chú<textarea value={config.mealInvite?.note ?? ''} onChange={(e) => updateMealInvite({ note: e.target.value })} rows={3} className="mt-1 w-full resize-none rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="Ví dụ: Có mặt trước 18:30..." /></label>
                     <div className="grid grid-cols-2 gap-2">
                         <label className="block text-xs font-semibold text-slate-600">Latitude<input value={config.mealInvite?.lat ?? ''} onChange={(e) => updateMealInvite({ lat: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-sm" inputMode="decimal" /></label>
                         <label className="block text-xs font-semibold text-slate-600">Longitude<input value={config.mealInvite?.lng ?? ''} onChange={(e) => updateMealInvite({ lng: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-sm" inputMode="decimal" /></label>
@@ -1483,6 +1484,15 @@ export function DesignerPage() {
                              top: el.y,
                              width: el.width,
                              height: el.height,
+                             ...(el.type === 'image' ? {
+                                 boxSizing: 'border-box',
+                                 padding: '6px',
+                                 overflow: 'hidden',
+                                 border: '1px solid rgba(252, 211, 77, 0.58)',
+                                 borderRadius: '2px',
+                                 backgroundColor: 'rgba(20, 18, 44, 0.28)',
+                                 boxShadow: '0 6px 18px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(254, 243, 199, 0.16)',
+                             } : {}),
                              ...el.style,
                              ...(el.type === 'button' ? {
                                  backgroundColor: el.style.backgroundColor || '#064e3b',
@@ -1492,6 +1502,14 @@ export function DesignerPage() {
                              transform: `rotate(${el.rotation || 0}deg)`
                          }}
                      >
+                         {el.type === 'image' && (
+                             <>
+                                 <span className="pointer-events-none absolute left-1 top-1 z-10 h-3 w-3 border-l border-t border-[#fde68a]/90" />
+                                 <span className="pointer-events-none absolute right-1 top-1 z-10 h-3 w-3 border-r border-t border-[#fde68a]/90" />
+                                 <span className="pointer-events-none absolute bottom-1 left-1 z-10 h-3 w-3 border-b border-l border-[#fde68a]/90" />
+                                 <span className="pointer-events-none absolute bottom-1 right-1 z-10 h-3 w-3 border-b border-r border-[#fde68a]/90" />
+                             </>
+                         )}
                          {el.type !== 'image' && hasMapLocation(el) && (
                              <span className="relative -top-0.5 inline-flex items-center align-middle mr-1.5">
                                  <MapPin size={13} className="shrink-0 text-[#fcd34d]/70" />
@@ -1500,7 +1518,7 @@ export function DesignerPage() {
                          {el.type === 'dynamic' && el.field === 'full_name' ? '{Tên Khách Mời}' : (
                              el.type === 'image' ? (
                                  normalizeUrl(el.content) ? (
-                                     <img src={normalizeUrl(el.content)} className="w-full h-full object-cover pointer-events-none" />
+                                     <img src={normalizeUrl(el.content)} className="w-full h-full object-cover pointer-events-none rounded-[1px]" />
                                  ) : (
                                      <div className="w-full h-full flex items-center justify-center bg-slate-100 text-[10px] text-slate-400">No Image</div>
                                  )

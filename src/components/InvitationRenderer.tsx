@@ -198,15 +198,26 @@ export function InvitationRenderer({ config, guest, onElementClick, selectedId, 
                           top: el.y,
                           width: el.width,
                           height: el.height,
+                          boxSizing: 'border-box',
+                          padding: '6px',
+                          overflow: 'hidden',
+                          border: '1px solid rgba(252, 211, 77, 0.58)',
+                          borderRadius: '2px',
+                          backgroundColor: 'rgba(20, 18, 44, 0.28)',
+                          boxShadow: '0 6px 18px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(254, 243, 199, 0.16)',
                           ...el.style,
                           transform: `rotate(${el.rotation || 0}deg)`
                       }}
                   >
+                      <span className="pointer-events-none absolute left-1 top-1 z-10 h-3 w-3 border-l border-t border-[#fde68a]/90" />
+                      <span className="pointer-events-none absolute right-1 top-1 z-10 h-3 w-3 border-r border-t border-[#fde68a]/90" />
+                      <span className="pointer-events-none absolute bottom-1 left-1 z-10 h-3 w-3 border-b border-l border-[#fde68a]/90" />
+                      <span className="pointer-events-none absolute bottom-1 right-1 z-10 h-3 w-3 border-b border-r border-[#fde68a]/90" />
                       {normalizeUrl(el.content) && (
                           <img 
                               src={normalizeUrl(el.content)} 
                               alt="element" 
-                              className="w-full h-full object-cover pointer-events-none" 
+                              className="w-full h-full object-cover pointer-events-none rounded-[1px]"
                           />
                       )}
                   </div>
