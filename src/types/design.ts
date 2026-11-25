@@ -28,12 +28,15 @@ export interface DesignElement {
 }
 
 export type PhotoFrameStyle = 'polaroid' | 'gold' | 'borderless'
+export type PhotoOrientation = 'portrait' | 'landscape'
 
 export interface MomentPhoto {
   id: string
   url: string
   originalUrl?: string
   thumbnailUrl?: string
+  orientation?: PhotoOrientation
+  aspectRatio?: number
   x: number
   y: number
   width: number
@@ -55,6 +58,8 @@ export function normalizeMomentPhoto(
       id: item.id || `photo_${index}`,
       url: item.url,
       thumbnailUrl: item.thumbnailUrl,
+      orientation: item.orientation || 'portrait',
+      aspectRatio: item.aspectRatio || (item.orientation === 'landscape' ? 1.25 : 0.8),
       x: typeof item.x === 'number' ? item.x : (index % 2 === 0 ? 25 : 185),
       y: typeof item.y === 'number' ? item.y : 20 + index * 125,
       width: item.width || 175,
@@ -80,6 +85,8 @@ export function normalizeMomentPhoto(
     rotation: defaultRotation,
     zIndex: index + 1,
     frame: 'polaroid',
+    orientation: 'portrait',
+    aspectRatio: 0.8,
   }
 }
 

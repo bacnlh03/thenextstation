@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { MobileDesigner } from '@/components/designer/MobileDesigner'
 import { PhotoCollageCanvas } from '@/components/designer/PhotoCollageCanvas'
+import { getImageAspectRatio } from '@/lib/image'
 import clsx from 'clsx'
 
 const FONTS = [
@@ -31,7 +32,7 @@ const FONTS = [
 export function DesignerPage() {
   const { 
       config, selectedElementId, loading, fetchConfig, saveConfig, 
-      selectElement, updateElement, addElement, moveElement, updateBackground, updateMusic, updatePhotos, updatePhotoLayout, uploadFile, removeElement, optimizeExistingPhotos, restoreOriginalPhotoLinks,
+      selectElement, updateElement, addElement, moveElement, updateBackground, updateMusic, updatePhotos, updatePhotoLayout, uploadFile, removeElement, optimizeExistingPhotos, restoreOriginalPhotoLinks, updateExistingPhotoRatios,
       undo, redo, past, future, pushStateToHistory,
       bringToFront, sendToBack
   } = useDesignStore()
@@ -59,6 +60,7 @@ export function DesignerPage() {
   const [photoUploading, setPhotoUploading] = useState(false)
   const [optimizingPhotos, setOptimizingPhotos] = useState(false)
   const [restoringOriginalPhotos, setRestoringOriginalPhotos] = useState(false)
+  const [updatingPhotoRatios, setUpdatingPhotoRatios] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
 
   // Photos Collage Studio State
@@ -141,6 +143,16 @@ export function DesignerPage() {
       await restoreOriginalPhotoLinks()
     } finally {
       setRestoringOriginalPhotos(false)
+    }
+  }
+
+  const handleUpdatePhotoRatios = async () => {
+    if (updatingPhotoRatios || optimizingPhotos || restoringOriginalPhotos || photoUploading || !normalizedPhotos.length) return
+    setUpdatingPhotoRatios(true)
+    try {
+      await updateExistingPhotoRatios()
+    } finally {
+      setUpdatingPhotoRatios(false)
     }
   }
 
@@ -543,7 +555,7 @@ export function DesignerPage() {
           onMouseUp={handleMouseUp}
       >
       {/* Sidebar Controls */}
-      <div className="w-full md:w-80 bg-white border-r border-slate-200 flex flex-col h-[40vh] md:h-screen z-10 shadow-lg">
+      <div className="w-full md:w-80 bg-white border-r border-slate-200 flex flex-col h-[40vh] md:h-screen md:sticky md:top-0 md:self-start z-10 shadow-lg">
          {/* Scrollable area */}
           <div className="flex-1 overflow-y-auto p-4">
             <div className="flex items-center justify-between mb-6">
@@ -1021,7 +1033,7 @@ export function DesignerPage() {
 
                     {/* Layout switcher */}
                     <div className="flex bg-slate-100 p-1 rounded-xl">
-                        <button
+                    <button
                             type="button"
                             onClick={() => updatePhotoLayout('collage')}
                             className={clsx(
@@ -1058,19 +1070,21 @@ export function DesignerPage() {
                                 const files = Array.from(e.target.files || [])
                                 if (!files.length) return
                                 setPhotoUploading(true)
-                                const urls: string[] = []
+                                const uploadedPhotos: { url: string; aspectRatio?: number }[] = []
                                 for (const file of files) {
+                                    const aspectRatio = await getImageAspectRatio(file)
                                     const url = await uploadFile(file)
-                                    if (url) urls.push(url)
+                                    if (url) uploadedPhotos.push({ url, aspectRatio })
                                 }
                                 const current = normalizedPhotos
                                 const startIndex = current.length
-                                const newPhotos: MomentPhoto[] = urls.map((url, i) => {
+                                const newPhotos: MomentPhoto[] = uploadedPhotos.map((uploaded, i) => {
                                     const idx = startIndex + i
                                     const isLeft = idx % 2 === 0
                                     return {
                                         id: `photo_${Date.now()}_${i}`,
-                                        url,
+                                        url: uploaded.url,
+                                        aspectRatio: uploaded.aspectRatio,
                                         x: isLeft ? 25 + (idx % 3) * 8 : 185 - (idx % 3) * 8,
                                         y: 20 + idx * 125,
                                         width: 175,
@@ -1095,6 +1109,9 @@ export function DesignerPage() {
                         )}
                     </label>
 
+                    {/* Tạm ẩn các nút tối ưu, khôi phục và cập nhật tỷ lệ ảnh cũ. */}
+                    {false && (
+                    <>
                     <button
                         type="button"
                         onClick={handleOptimizeExistingPhotos}
@@ -1113,6 +1130,17 @@ export function DesignerPage() {
                     >
                         {restoringOriginalPhotos ? 'Đang khôi phục liên kết…' : 'Khôi phục liên kết ảnh gốc'}
                     </button>
+
+                    <button
+                        type="button"
+                        onClick={handleUpdatePhotoRatios}
+                        disabled={updatingPhotoRatios || optimizingPhotos || restoringOriginalPhotos || photoUploading || !normalizedPhotos.length}
+                        className="w-full py-2.5 px-3 flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 text-xs font-semibold text-violet-700 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {updatingPhotoRatios ? 'Đang đọc tỷ lệ ảnh…' : 'Cập nhật tỷ lệ ảnh cũ'}
+                    </button>
+                    </>
+                    )}
 
                     {/* Selected Photo Inspector */}
                     {selectedPhoto ? (

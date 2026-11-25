@@ -47,7 +47,7 @@ export function PhotoCollageCanvas() {
   // Canvas height derived from photo positions
   const canvasHeight = useMemo(() => {
     if (normalizedPhotos.length === 0) return 520
-    return Math.max(...normalizedPhotos.map(p => p.y + (p.height || p.width * 1.25)), 520) + 80
+    return Math.max(...normalizedPhotos.map(p => p.y + (p.height || p.width / (p.aspectRatio || 0.8))), 520) + 80
   }, [normalizedPhotos])
 
   const canvasDesignWidth = useMemo(
@@ -315,6 +315,7 @@ export function PhotoCollageCanvas() {
           const isSelected = selectedPhotoId === photo.id
           const isPolaroid = photo.frame === 'polaroid'
           const isGold = photo.frame === 'gold'
+          const isLandscape = photo.orientation === 'landscape'
 
           return (
             <div
@@ -342,6 +343,7 @@ export function PhotoCollageCanvas() {
               {/* Floating controls */}
               {isSelected && (
                 <div
+                  onPointerDown={e => e.stopPropagation()}
                   onClick={e => e.stopPropagation()}
                     className="absolute -top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-black/90 backdrop-blur-md px-2.5 py-1 rounded-full text-white shadow-2xl whitespace-nowrap text-[10px]"
                 >
@@ -355,6 +357,7 @@ export function PhotoCollageCanvas() {
                   >Xuống dưới</button>
                   <div className="w-px h-3 bg-white/20 mx-0.5" />
                   <button type="button" title="Xóa ảnh"
+                    onPointerDown={e => e.stopPropagation()}
                     onClick={() => deletePhoto(photo.id)}
                     className="p-1 text-red-400 hover:text-red-300 hover:bg-white/10 rounded-full"
                   ><Trash2 size={11} /></button>
@@ -382,8 +385,9 @@ export function PhotoCollageCanvas() {
 
               <div className={clsx(
                 'relative w-full overflow-hidden bg-slate-900 pointer-events-none',
-                isPolaroid ? 'aspect-[4/5] rounded-[1px]' : 'aspect-square rounded-lg'
-              )}>
+                isPolaroid ? 'rounded-[1px]' : 'rounded-lg'
+              )}
+              style={{ aspectRatio: photo.aspectRatio || (isLandscape ? 1.25 : 0.8) }}>
                 <img
                   src={photo.url}
                   alt="Khoảnh khắc"

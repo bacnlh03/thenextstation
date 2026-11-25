@@ -49,7 +49,7 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
 
   // Calculate required canvas height for collage
   const maxY = normalized.reduce((acc, p) => {
-    const approxH = p.height || p.width * 1.25
+    const approxH = p.height || p.width / (p.aspectRatio || 0.8)
     return Math.max(acc, p.y + approxH)
   }, 420) + 40
 
@@ -320,6 +320,7 @@ function CollagePhotoCard({
 }) {
   const isPolaroid = photo.frame === 'polaroid'
   const isGold = photo.frame === 'gold'
+  const isLandscape = photo.orientation === 'landscape'
 
   return (
     <div
@@ -347,8 +348,9 @@ function CollagePhotoCard({
       <div
         className={clsx(
           'relative w-full overflow-hidden bg-slate-800/40',
-          isPolaroid ? 'aspect-[4/5] rounded-[1px]' : 'aspect-square rounded-lg'
+          isPolaroid ? 'rounded-[1px]' : 'rounded-lg'
         )}
+        style={{ aspectRatio: photo.aspectRatio || (isLandscape ? 1.25 : 0.8) }}
       >
         <img
           src={photo.thumbnailUrl || photo.url}

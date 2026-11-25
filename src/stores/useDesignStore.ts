@@ -4,6 +4,7 @@ import type { DesignConfig, DesignElement, PhotoItem } from '@/types/design'
 import { useToastStore } from '@/stores/useGuestStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { supabase, INVITATION_ASSETS_BUCKET } from '@/lib/supabase'
+import { getImageAspectRatioFromUrl } from '@/lib/image'
 
 const CONFIG_ROW_ID = 'default'
 
@@ -142,6 +143,7 @@ interface DesignState {
   uploadFile: (file: File) => Promise<string | null | undefined>
   optimizeExistingPhotos: () => Promise<boolean>
   restoreOriginalPhotoLinks: () => Promise<boolean>
+  updateExistingPhotoRatios: () => Promise<boolean>
 }
 
 export const useDesignStore = create<DesignState>((set, get) => ({
@@ -540,6 +542,61 @@ export const useDesignStore = create<DesignState>((set, get) => ({
       set({ config: currentConfig })
       console.error('Restore original photo links failed:', error)
       useToastStore.getState().showToast('Không thể khôi phục liên kết ảnh gốc', 'error')
+      return false
+    }
+  },
+
+  updateExistingPhotoRatios: async () => {
+    if (!requireAuth()) return false
+
+    const currentConfig = get().config
+    const sourcePhotos = currentConfig.photos || []
+    if (!sourcePhotos.length) {
+      useToastStore.getState().showToast('Chưa có ảnh để cập nhật tỷ lệ', 'error')
+      return false
+    }
+
+    try {
+      const updatedPhotos: PhotoItem[] = []
+      for (let index = 0; index < sourcePhotos.length; index += 1) {
+        const source = normalizeMomentPhoto(sourcePhotos[index], index, sourcePhotos.length)
+        const aspectRatio = await getImageAspectRatioFromUrl(source.url)
+        if (!aspectRatio) throw new Error(`Không đọc được kích thước ảnh ${index + 1}`)
+
+        updatedPhotos.push({
+          ...source,
+          aspectRatio,
+          orientation: aspectRatio >= 1 ? 'landscape' as const : 'portrait' as const,
+        })
+      }
+
+      const compactElements = await Promise.all(currentConfig.elements.map(async element => {
+        if (element.type !== 'image' || !element.content?.startsWith('data:image/')) return element
+        const imageResponse = await fetch(element.content)
+        const imageBlob = await imageResponse.blob()
+        const imageUrl = await get().uploadFile(new File([imageBlob], `design-element-${element.id}.png`, {
+          type: imageBlob.type || 'image/png',
+        }))
+        if (!imageUrl) throw new Error(`Không thể chuyển ảnh ${element.id} lên Storage`)
+        return { ...element, content: imageUrl }
+      }))
+
+      get().pushToHistory()
+      set(state => ({
+        config: { ...state.config, elements: compactElements, photos: updatedPhotos },
+      }))
+      const saved = await get().saveConfig()
+      if (!saved) {
+        set({ config: currentConfig })
+        return false
+      }
+
+      useToastStore.getState().showToast(`Đã cập nhật tỷ lệ ${updatedPhotos.length} ảnh`)
+      return true
+    } catch (error) {
+      set({ config: currentConfig })
+      console.error('Update existing photo ratios failed:', error)
+      useToastStore.getState().showToast('Không thể cập nhật tỷ lệ ảnh', 'error')
       return false
     }
   },

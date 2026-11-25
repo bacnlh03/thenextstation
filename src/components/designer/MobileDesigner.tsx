@@ -9,6 +9,7 @@ import { normalizeMomentPhoto } from '@/types/design'
 import type { MomentPhoto, PhotoFrameStyle } from '@/types/design'
 import { InvitationRenderer } from '@/components/InvitationRenderer'
 import { PhotoCollageCanvas } from '@/components/designer/PhotoCollageCanvas'
+import { getImageAspectRatio } from '@/lib/image'
 import clsx from 'clsx'
 
 const FONTS = [
@@ -48,13 +49,14 @@ export function MobileDesigner({
 }: Props) {
   const {
     config, selectedElementId, loading, saveConfig,
-    selectElement, updateElement, addElement, updateBackground, updateMusic, updatePhotos, updatePhotoLayout, uploadFile, removeElement, optimizeExistingPhotos, restoreOriginalPhotoLinks
+    selectElement, updateElement, addElement, updateBackground, updateMusic, updatePhotos, updatePhotoLayout, uploadFile, removeElement, optimizeExistingPhotos, restoreOriginalPhotoLinks, updateExistingPhotoRatios
   } = useDesignStore()
 
   const [activeTab, setActiveTab] = useState<'content' | 'theme' | 'music' | 'photos'>('content')
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null)
   const [optimizingPhotos, setOptimizingPhotos] = useState(false)
   const [restoringOriginalPhotos, setRestoringOriginalPhotos] = useState(false)
+  const [updatingPhotoRatios, setUpdatingPhotoRatios] = useState(false)
 
   const normalizedPhotos: MomentPhoto[] = (config.photos || []).map((p, i) =>
     normalizeMomentPhoto(p, i, config.photos?.length || 1)
@@ -115,20 +117,22 @@ export function MobileDesigner({
     if (!files.length) return
     setPhotoUploading(true)
     try {
-      const urls: string[] = []
+      const uploadedPhotos: { url: string; aspectRatio?: number }[] = []
       for (const file of files) {
+        const aspectRatio = await getImageAspectRatio(file)
         const url = await uploadFile(file)
-        if (url) urls.push(url)
+        if (url) uploadedPhotos.push({ url, aspectRatio })
       }
-      if (urls.length) {
+      if (uploadedPhotos.length) {
         const current = normalizedPhotos
         const startIndex = current.length
-        const newPhotos: MomentPhoto[] = urls.map((url, i) => {
+        const newPhotos: MomentPhoto[] = uploadedPhotos.map((uploaded, i) => {
           const idx = startIndex + i
           const isLeft = idx % 2 === 0
           return {
             id: `photo_${Date.now()}_${i}`,
-            url,
+            url: uploaded.url,
+            aspectRatio: uploaded.aspectRatio,
             x: isLeft ? 25 + (idx % 3) * 8 : 185 - (idx % 3) * 8,
             y: 20 + idx * 125,
             width: 175,
@@ -176,6 +180,16 @@ export function MobileDesigner({
       await restoreOriginalPhotoLinks()
     } finally {
       setRestoringOriginalPhotos(false)
+    }
+  }
+
+  const handleUpdatePhotoRatios = async () => {
+    if (updatingPhotoRatios || optimizingPhotos || restoringOriginalPhotos || !normalizedPhotos.length) return
+    setUpdatingPhotoRatios(true)
+    try {
+      await updateExistingPhotoRatios()
+    } finally {
+      setUpdatingPhotoRatios(false)
     }
   }
 
@@ -648,6 +662,9 @@ export function MobileDesigner({
               />
             </label>
 
+            {/* Tạm ẩn các nút tối ưu, khôi phục và cập nhật tỷ lệ ảnh cũ. */}
+            {false && (
+            <>
             <button
               type="button"
               onClick={handleOptimizeExistingPhotos}
@@ -666,6 +683,17 @@ export function MobileDesigner({
             >
               {restoringOriginalPhotos ? 'Đang khôi phục liên kết...' : 'Khôi phục liên kết ảnh gốc'}
             </button>
+
+            <button
+              type="button"
+              onClick={handleUpdatePhotoRatios}
+              disabled={updatingPhotoRatios || optimizingPhotos || restoringOriginalPhotos || photoUploading || !normalizedPhotos.length}
+              className="w-full py-2.5 px-3 flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 text-xs font-semibold text-violet-700 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {updatingPhotoRatios ? 'Đang đọc tỷ lệ ảnh...' : 'Cập nhật tỷ lệ ảnh cũ'}
+            </button>
+            </>
+            )}
 
             {/* Direct touch canvas for positioning photos on mobile */}
             <div className="px-4">
@@ -803,6 +831,7 @@ export function MobileDesigner({
                     className="w-full accent-indigo-600"
                   />
                 </div>
+
 
                 {/* Frame */}
                 <div>
