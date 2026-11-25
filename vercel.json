@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/to/:slug",
+      "destination": "/api/invitation-preview?slug=:slug"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
