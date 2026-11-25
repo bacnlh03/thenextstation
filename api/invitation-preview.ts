@@ -39,7 +39,8 @@ export default function handler(req: Request, res: Response) {
 
   const host = first(req.headers?.host) || 'thenextstation.vercel.app'
   const protocol = host.startsWith('localhost') ? 'http' : 'https'
-  const invitationUrl = `${protocol}://${host}/to/${encodeURIComponent(slug)}`
+  const previewParams = new URLSearchParams({ lang: language })
+  const invitationUrl = `${protocol}://${host}/to/${encodeURIComponent(slug)}?${previewParams.toString()}`
   const appUrl = `/invitation?id=${encodeURIComponent(slug)}&lang=${language}`
   const safeInvitationUrl = escapeHtml(invitationUrl)
   const safeAppUrl = escapeHtml(appUrl)
@@ -54,6 +55,7 @@ export default function handler(req: Request, res: Response) {
     <title>Thiệp Mời Lễ Tốt Nghiệp - Ngọc Trâm</title>
     <meta property="og:type" content="website" />
     <meta property="og:url" content="${safeInvitationUrl}" />
+    <link rel="canonical" href="${safeInvitationUrl}" />
     <meta property="og:title" content="Thiệp Mời Lễ Tốt Nghiệp - Ngọc Trâm" />
     <meta property="og:description" content="Trân trọng kính mời bạn đến chung vui và lưu giữ những khoảnh khắc đáng nhớ cùng mình tại Lễ Tốt Nghiệp!" />
     <meta property="og:image" content="https://${host}/preview.png" />
@@ -63,6 +65,7 @@ export default function handler(req: Request, res: Response) {
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Thiệp Mời Lễ Tốt Nghiệp - Ngọc Trâm" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="${safeInvitationUrl}" />
     <meta name="twitter:title" content="Thiệp Mời Lễ Tốt Nghiệp - Ngọc Trâm" />
     <meta name="twitter:description" content="Trân trọng kính mời bạn đến chung vui và lưu giữ những khoảnh khắc đáng nhớ cùng mình tại Lễ Tốt Nghiệp!" />
     <meta name="twitter:image" content="https://${host}/preview.png" />

@@ -38,7 +38,7 @@ export function ModalQRBatch({ guests, onClose }: Props) {
                <div key={guest.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center gap-3 print:border-none print:shadow-none break-inside-avoid">
                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
                    <QRCodeSVG 
-                     value={`${invitationBaseUrl}/to/${guest.slug || guest.id}?lang=vi&v=20261128`}
+                     value={`${invitationBaseUrl}/to/${guest.slug || guest.id}?lang=vi`}
                      size={140}
                      level="H"
                    />

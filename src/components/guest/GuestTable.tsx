@@ -3,8 +3,6 @@ import { Pencil, Save, X, Trash2, Loader2, Check, MessageSquareHeart, MessageSqu
 import type { Guest } from '@/types'
 import clsx from 'clsx'
 
-const INVITATION_LINK_VERSION = '20261128'
-
 interface Props {
   guests: Guest[]
   loading: boolean
@@ -23,7 +21,7 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onToggleAl
     const baseUrl = guest.slug
       ? `${window.location.origin}/to/${guest.slug}`
       : `${window.location.origin}/invitation?id=${guest.id}`
-    const params = new URLSearchParams({ lang: language, v: INVITATION_LINK_VERSION })
+    const params = new URLSearchParams({ lang: language })
     const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}${params.toString()}`
     navigator.clipboard.writeText(url)
     const key = `${guest.id}-${language}`
