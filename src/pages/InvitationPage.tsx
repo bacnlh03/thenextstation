@@ -17,7 +17,7 @@ export function InvitationPage() {
   const [searchParams] = useSearchParams()
   const { slug } = useParams<{ slug?: string }>()
   const guestIdentifier = slug || searchParams.get('id') || searchParams.get('to')
-  const [language, setLanguage] = useState<InvitationLanguage>(searchParams.get('lang') === 'en' ? 'en' : 'vi')
+  const language: InvitationLanguage = searchParams.get('lang') === 'en' ? 'en' : 'vi'
   
   const getGuestById = useGuestStore(state => state.getGuestById)
   const confirmAttendance = useGuestStore(state => state.confirmAttendance)
