@@ -4,6 +4,7 @@ export interface Guest {
   full_name: string
   status: number // 0=Chưa gửi, 1=Đã gửi, 2=Xác nhận
   allow_wishes?: boolean
+  allow_meal_invite?: boolean
   updated_at: string
 }
 

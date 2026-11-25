@@ -42,6 +42,7 @@ interface GuestState {
   updateName: (id: string, name: string) => Promise<boolean>
   updateStatus: (id: string, status: number) => Promise<boolean>
   toggleAllowWishes: (id: string, allow: boolean) => Promise<boolean>
+  toggleAllowMealInvite: (id: string, allow: boolean) => Promise<boolean>
   deleteGuest: (id: string) => Promise<boolean>
   getGuestById: (id: string) => Promise<Guest | null>
   confirmAttendance: (id: string) => Promise<boolean>
@@ -177,6 +178,27 @@ export const useGuestStore = create<GuestState>((set, get) => ({
     }
     await get().fetchGuests()
     useToastStore.getState().showToast('Lỗi cập nhật cài đặt lời chúc', 'error')
+    return false
+  },
+
+  toggleAllowMealInvite: async (id, allow) => {
+    if (!requireAuth()) return false
+    const now = new Date().toISOString()
+    set((state) => ({
+      guests: state.guests.map((g) =>
+        g.id === id ? { ...g, allow_meal_invite: allow, updated_at: now } : g
+      ),
+    }))
+    try {
+      const { error } = await supabase.from('guests').update({ allow_meal_invite: allow }).eq('id', id)
+      if (error) throw error
+      useToastStore.getState().showToast(allow ? 'Đã bật lời mời đi ăn cho khách' : 'Đã tắt lời mời đi ăn cho khách')
+      return true
+    } catch (err) {
+      console.error(err)
+    }
+    await get().fetchGuests()
+    useToastStore.getState().showToast('Lỗi cập nhật lời mời đi ăn', 'error')
     return false
   },
 

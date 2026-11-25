@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckCircle, XCircle, Send, Pencil, Save, X, Trash2, Loader2, Link2, Check, MessageSquareHeart, MessageSquareOff } from 'lucide-react'
+import { CheckCircle, XCircle, Send, Pencil, Save, X, Trash2, Loader2, Link2, Check, MessageSquareHeart, MessageSquareOff, Utensils } from 'lucide-react'
 import type { Guest } from '@/types'
 import clsx from 'clsx'
 
@@ -10,9 +10,10 @@ interface Props {
   onDelete: (id: string) => void
   onUpdateStatus: (id: string, status: number) => void
   onToggleAllowWishes?: (id: string, allow: boolean) => void
+  onToggleAllowMealInvite?: (id: string, allow: boolean) => void
 }
 
-export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateStatus, onToggleAllowWishes }: Props) {
+export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateStatus, onToggleAllowWishes, onToggleAllowMealInvite }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editNameModel, setEditNameModel] = useState('')
   const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null)
@@ -200,6 +201,13 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
                   </>
                 )}
               </button>
+              <button
+                type="button"
+                onClick={() => onToggleAllowMealInvite?.(guest.id, guest.allow_meal_invite !== true)}
+                className={clsx('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all active:scale-95 select-none', guest.allow_meal_invite === true ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-white text-slate-400 border-slate-300')}
+              >
+                <Utensils size={13} /><span>Ăn: {guest.allow_meal_invite === true ? 'Bật' : 'Tắt'}</span>
+              </button>
             </div>
           </div>
         ))}
@@ -214,6 +222,7 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
             <th className="p-4 w-[35%] bg-slate-50">Họ và Tên</th>
             <th className="p-4 w-[18%] bg-slate-50">Trạng thái</th>
             <th className="p-4 w-[15%] text-center bg-slate-50">Lời chúc</th>
+            <th className="p-4 w-[15%] text-center bg-slate-50">Mời ăn</th>
             <th className="p-4 w-[17%] bg-slate-50">Cập nhật lúc</th>
             <th className="p-4 text-right bg-slate-50">Hành động</th>
           </tr>
@@ -337,6 +346,11 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
                       <span>Đã khóa</span>
                     </>
                   )}
+                </button>
+              </td>
+              <td className="p-4 text-center">
+                <button type="button" onClick={() => onToggleAllowMealInvite?.(guest.id, guest.allow_meal_invite !== true)} title={guest.allow_meal_invite === true ? 'Bấm để tắt lời mời đi ăn' : 'Bấm để bật lời mời đi ăn'} className={clsx('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer hover:scale-105 active:scale-95 select-none', guest.allow_meal_invite === true ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' : 'bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200 hover:text-slate-600')}>
+                  <Utensils size={13} /><span>{guest.allow_meal_invite === true ? 'Cho phép' : 'Đã khóa'}</span>
                 </button>
               </td>
               

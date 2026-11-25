@@ -6,6 +6,7 @@ import { useDesignStore } from '@/stores/useDesignStore'
 import { InvitationRenderer } from '@/components/InvitationRenderer'
 import { WishesSection } from '@/components/invitation/WishesSection'
 import { PhotoGallerySection } from '@/components/invitation/PhotoGallerySection'
+import { MealInviteSection } from '@/components/invitation/MealInviteSection'
 import { useSearchParams, useParams } from 'react-router-dom'
 import clsx from 'clsx'
 import type { DesignConfig } from '@/types/design'
@@ -24,6 +25,7 @@ export function InvitationPage() {
   const [guestName, setGuestName] = useState('Bạn của Ngọc Trâm')
   const [isConfirmed, setIsConfirmed] = useState<number>(0)
   const [allowWishes, setAllowWishes] = useState<boolean>(true)
+  const [allowMealInvite, setAllowMealInvite] = useState<boolean>(false)
   const [isVisible, setIsVisible] = useState(false)
   const [isOpened, setIsOpened] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -40,6 +42,9 @@ export function InvitationPage() {
           setIsConfirmed(guest.status)
           if (typeof guest.allow_wishes === 'boolean') {
             setAllowWishes(guest.allow_wishes)
+          }
+          if (typeof guest.allow_meal_invite === 'boolean') {
+            setAllowMealInvite(guest.allow_meal_invite)
           }
         }
       }
@@ -127,7 +132,8 @@ export function InvitationPage() {
 
   const hasMusic = Boolean(config.music?.enabled && config.music.url)
   const hasPhotos = Boolean(config.photos && config.photos.length > 0)
-  const hasSectionsBelow = Boolean(allowWishes || hasPhotos)
+  const hasMealInvite = Boolean(config.mealInvite && allowMealInvite)
+  const hasSectionsBelow = Boolean(allowWishes || hasPhotos || hasMealInvite)
 
   return (
     <div 
@@ -272,6 +278,17 @@ export function InvitationPage() {
               <section>
                 <PhotoGallerySection photos={config.photos!} layout={config.photoLayout} />
               </section>
+            </>
+          )}
+
+          {hasMealInvite && (
+            <>
+              <div className="flex items-center justify-center gap-4 px-8">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#fcd34d]/20 to-transparent" />
+                <span className="text-[#fcd34d]/30 text-xs">✦</span>
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#fcd34d]/20 to-transparent" />
+              </div>
+              <section><MealInviteSection invite={config.mealInvite!} /></section>
             </>
           )}
         </div>

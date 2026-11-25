@@ -26,6 +26,7 @@ export function GuestsPage() {
   const updateName = useGuestStore(state => state.updateName)
   const updateStatus = useGuestStore(state => state.updateStatus)
   const toggleAllowWishes = useGuestStore(state => state.toggleAllowWishes)
+  const toggleAllowMealInvite = useGuestStore(state => state.toggleAllowMealInvite)
   const deleteGuest = useGuestStore(state => state.deleteGuest)
   const createGuests = useGuestStore(state => state.createGuests)
 
@@ -86,6 +87,7 @@ export function GuestsPage() {
           onDelete={setDeleteId}
           onUpdateStatus={updateStatus}
           onToggleAllowWishes={toggleAllowWishes}
+          onToggleAllowMealInvite={toggleAllowMealInvite}
         />
       </div>
 

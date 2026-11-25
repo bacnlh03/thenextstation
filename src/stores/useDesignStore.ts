@@ -132,6 +132,7 @@ interface DesignState {
   removeElement: (id: string) => void
   updateBackground: (bg: Partial<DesignConfig['background']>) => void
   updateMusic: (music: Partial<DesignConfig['music']>, pushHistory?: boolean) => void
+  updateMealInvite: (invite: Partial<NonNullable<DesignConfig['mealInvite']>>) => void
   updatePhotos: (photos: PhotoItem[]) => void
   updatePhotoLayout: (layout: 'collage' | 'grid') => void
   moveElement: (id: string, x: number, y: number) => void
@@ -303,6 +304,22 @@ export const useDesignStore = create<DesignState>((set, get) => ({
         music: state.config.music
           ? { ...state.config.music, ...musicUpdates }
           : { url: '', enabled: true, ...musicUpdates },
+      },
+    }))
+  },
+
+  updateMealInvite: (invite) => {
+    get().pushToHistory()
+    set((state) => ({
+      config: {
+        ...state.config,
+        mealInvite: {
+          title: 'Mời đi ăn cùng nhau',
+          content: '',
+          address: '',
+          ...state.config.mealInvite,
+          ...invite,
+        },
       },
     }))
   },

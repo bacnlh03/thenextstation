@@ -36,7 +36,7 @@ const FONTS = [
 export function DesignerPage() {
   const { 
       config, selectedElementId, loading, fetchConfig, saveConfig, 
-      selectElement, updateElement, addElement, moveElement, updateBackground, updateMusic, updatePhotos, updatePhotoLayout, uploadFile, removeElement, optimizeExistingPhotos, restoreOriginalPhotoLinks, updateExistingPhotoRatios,
+      selectElement, updateElement, addElement, moveElement, updateBackground, updateMusic, updateMealInvite, updatePhotos, updatePhotoLayout, uploadFile, removeElement, optimizeExistingPhotos, restoreOriginalPhotoLinks, updateExistingPhotoRatios,
       undo, redo, past, future, pushStateToHistory,
       bringToFront, sendToBack
   } = useDesignStore()
@@ -59,7 +59,7 @@ export function DesignerPage() {
   const [showIconPicker, setShowIconPicker] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [musicDuration, setMusicDuration] = useState(0)
-  const [activeTab, setActiveTab] = useState<'design' | 'music' | 'photos'>('design')
+  const [activeTab, setActiveTab] = useState<'design' | 'music' | 'photos' | 'meal'>('design')
   const [isPlaying, setIsPlaying] = useState(false)
   const [photoUploading, setPhotoUploading] = useState(false)
   const [optimizingPhotos, setOptimizingPhotos] = useState(false)
@@ -589,7 +589,7 @@ export function DesignerPage() {
 
             {/* Tab Switcher */}
             <div className="flex border-b border-slate-100 mb-6">
-                 <button 
+                 <button
                     onClick={() => setActiveTab('design')}
                     className={clsx(
                         "flex-1 py-3 text-[10px] font-bold transition-all border-b-2 tracking-widest",
@@ -615,6 +615,12 @@ export function DesignerPage() {
                     )}
                  >
                      KHOẢNH KHẮC
+                 </button>
+                 <button
+                    onClick={() => setActiveTab('meal')}
+                    className={clsx("flex-1 py-3 text-[10px] font-bold transition-all border-b-2 tracking-widest", activeTab === 'meal' ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600")}
+                 >
+                     MỜI ĂN
                  </button>
             </div>
 
@@ -862,6 +868,23 @@ export function DesignerPage() {
                             Chọn một phần tử để bắt đầu chỉnh sửa
                         </div>
                     )}
+                </div>
+            )}
+
+            {activeTab === 'meal' && (
+                <div className="space-y-5">
+                    <div>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Mời đi ăn</p>
+                        <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-500">Nội dung bên dưới sẽ hiển thị cho những khách được bật “Ăn” trong trang Khách mời.</p>
+                    </div>
+                    <label className="block text-xs font-semibold text-slate-600">Tiêu đề<input value={config.mealInvite?.title ?? ''} onChange={(e) => updateMealInvite({ title: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="Mời đi ăn cùng nhau" /></label>
+                    <label className="block text-xs font-semibold text-slate-600">Nội dung<textarea value={config.mealInvite?.content ?? ''} onChange={(e) => updateMealInvite({ content: e.target.value })} rows={5} className="mt-1 w-full resize-none rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="Nội dung lời mời..." /></label>
+                    <label className="block text-xs font-semibold text-slate-600">Địa chỉ<input value={config.mealInvite?.address ?? ''} onChange={(e) => updateMealInvite({ address: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="Nhà hàng / địa chỉ" /></label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <label className="block text-xs font-semibold text-slate-600">Latitude<input value={config.mealInvite?.lat ?? ''} onChange={(e) => updateMealInvite({ lat: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-sm" inputMode="decimal" /></label>
+                        <label className="block text-xs font-semibold text-slate-600">Longitude<input value={config.mealInvite?.lng ?? ''} onChange={(e) => updateMealInvite({ lng: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-sm" inputMode="decimal" /></label>
+                    </div>
+                    <p className="text-[11px] leading-relaxed text-slate-400">Bấm vào địa chỉ trên thiệp để mở bản đồ. Quyền hiển thị được cấu hình riêng cho từng khách ở trang Khách mời.</p>
                 </div>
             )}
 

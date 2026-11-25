@@ -34,6 +34,7 @@ export interface Database {
           full_name: string
           status: number
           allow_wishes?: boolean
+          allow_meal_invite?: boolean
           updated_at: string
         }
         Insert: {
@@ -42,6 +43,7 @@ export interface Database {
           full_name: string
           status?: number
           allow_wishes?: boolean
+          allow_meal_invite?: boolean
           updated_at?: string
         }
         Update: {
@@ -50,6 +52,7 @@ export interface Database {
           full_name?: string
           status?: number
           allow_wishes?: boolean
+          allow_meal_invite?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -91,6 +94,7 @@ export interface Database {
           full_name: string
           status: number
           allow_wishes?: boolean
+          allow_meal_invite?: boolean
           updated_at: string
         }[]
       }
@@ -102,6 +106,7 @@ export interface Database {
           full_name: string
           status: number
           allow_wishes?: boolean
+          allow_meal_invite?: boolean
           updated_at: string
         }[]
       }

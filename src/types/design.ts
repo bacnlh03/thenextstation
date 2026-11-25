@@ -105,6 +105,13 @@ export interface DesignConfig {
     startTime?: number // in seconds
     endTime?: number   // in seconds
   }
+  mealInvite?: {
+    title: string
+    content: string
+    address: string
+    lat?: number | string
+    lng?: number | string
+  }
   // Personal photo album shown in the scrollable invitation page
   photos?: PhotoItem[]
   photoLayout?: 'collage' | 'grid'
@@ -118,6 +125,13 @@ export const DEFAULT_CONFIG: DesignConfig = {
   music: {
     url: '',
     enabled: false
+  },
+  mealInvite: {
+    title: 'Mời đi ăn cùng nhau',
+    content: 'Sau buổi lễ, mình thân mời bạn cùng dùng bữa và chia sẻ thêm những khoảnh khắc vui nhé!',
+    address: '',
+    lat: '',
+    lng: '',
   },
   background: {
     color: '#1e1b4b', // Midnight Blue
