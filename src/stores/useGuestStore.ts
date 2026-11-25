@@ -11,6 +11,17 @@ function requireAuth(): boolean {
   return true
 }
 
+function compareGuestsByGivenName(a: Guest, b: Guest): number {
+  const getGivenName = (fullName: string) => fullName.trim().split(/\s+/).at(-1) ?? ''
+  const givenNameComparison = getGivenName(a.full_name).localeCompare(
+    getGivenName(b.full_name),
+    'vi',
+    { sensitivity: 'base' },
+  )
+
+  return givenNameComparison || a.full_name.localeCompare(b.full_name, 'vi', { sensitivity: 'base' })
+}
+
 interface ToastState {
   toasts: { id: string; message: string; type: 'success' | 'error' | 'info' }[]
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void
@@ -67,7 +78,6 @@ export const useGuestStore = create<GuestState>((set, get) => ({
       let query = supabase
         .from('guests')
         .select('*')
-        .order('updated_at', { ascending: false })
 
       if (filter.search) {
         query = query.ilike('full_name', `%${filter.search}%`)
@@ -79,7 +89,7 @@ export const useGuestStore = create<GuestState>((set, get) => ({
       const { data, error } = await query
       if (error) throw error
 
-      set({ guests: data ?? [] })
+      set({ guests: [...(data ?? [])].sort(compareGuestsByGivenName) })
 
       const { selectedIds, guests } = get()
       set({
