@@ -324,7 +324,7 @@ function CollagePhotoCard({
 
   return (
     <div
-      onPointerDown={onClick}
+      onClick={onClick}
       className={clsx(
         'absolute transition-transform duration-300 hover:scale-105 active:scale-95 cursor-pointer group',
         isPolaroid &&
@@ -388,7 +388,7 @@ function PhotoTile({
 }) {
   return (
     <div
-      onPointerDown={onClick}
+      onClick={onClick}
       className={clsx(
         'relative break-inside-avoid overflow-hidden rounded-2xl select-none cursor-pointer',
         'border border-[#fcd34d]/10 transition-transform duration-300 hover:scale-[1.02]'

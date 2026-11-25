@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef, type ReactNode } from 'react'
+import { useEffect, useState, useRef, type PointerEvent, type ReactNode } from 'react'
 import confetti from 'canvas-confetti'
-import { Volume2, VolumeX, ChevronDown } from 'lucide-react'
+import { Volume2, VolumeX, ChevronDown, RotateCcw } from 'lucide-react'
 import { useGuestStore } from '@/stores/useGuestStore'
 import { useDesignStore } from '@/stores/useDesignStore'
 import { InvitationRenderer } from '@/components/InvitationRenderer'
@@ -301,6 +301,9 @@ function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen }: {
 }) {
     const containerRef = useRef<HTMLDivElement>(null)
     const [scale, setScale] = useState(1)
+    const [zoom, setZoom] = useState(1)
+    const pointersRef = useRef(new Map<number, { x: number; y: number }>())
+    const pinchStartRef = useRef<{ distance: number; zoom: number } | null>(null)
 
     useEffect(() => {
         const updateScale = () => {
@@ -327,8 +330,46 @@ function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen }: {
     const width = config.width * scale
     const height = config.height * scale
 
+    const clampZoom = (value: number) => Math.min(3, Math.max(1, value))
+
+    const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+        pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+        if (pointersRef.current.size === 2) {
+            const [first, second] = Array.from(pointersRef.current.values())
+            pinchStartRef.current = {
+                distance: Math.hypot(second.x - first.x, second.y - first.y),
+                zoom,
+            }
+        }
+    }
+
+    const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+        if (!pointersRef.current.has(event.pointerId)) return
+        pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+        if (pointersRef.current.size !== 2 || !pinchStartRef.current) return
+
+        const [first, second] = Array.from(pointersRef.current.values())
+        const distance = Math.hypot(second.x - first.x, second.y - first.y)
+        if (pinchStartRef.current.distance > 0) {
+            setZoom(clampZoom(pinchStartRef.current.zoom * distance / pinchStartRef.current.distance))
+        }
+    }
+
+    const handlePointerEnd = (event: PointerEvent<HTMLDivElement>) => {
+        pointersRef.current.delete(event.pointerId)
+        if (pointersRef.current.size < 2) pinchStartRef.current = null
+    }
+
     return (
-        <div ref={containerRef} className="flex justify-center items-center">
+        <div
+          ref={containerRef}
+          className="relative flex justify-center items-center"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerEnd}
+          onPointerCancel={handlePointerEnd}
+          style={{ touchAction: 'none' }}
+        >
              <div
                 className="relative p-px"
                 style={{
@@ -336,6 +377,9 @@ function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen }: {
                   height: height + 18,
                   background: 'linear-gradient(160deg, rgba(253,230,138,0.95), rgba(180,83,9,0.55) 38%, rgba(252,211,77,0.9) 68%, rgba(120,53,15,0.7))',
                   boxShadow: '0 28px 70px rgba(0,0,0,0.48), 0 0 48px rgba(252,211,77,0.14)',
+                  transform: `scale(${zoom})`,
+                  transformOrigin: 'center center',
+                  transition: pinchStartRef.current ? 'none' : 'transform 160ms ease-out',
                 }}
              >
                 <div className="absolute inset-[7px] border border-[#fcd34d]/25 pointer-events-none z-30" />
@@ -354,6 +398,15 @@ function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen }: {
                   <BookCoverReveal scale={scale} onOpen={onOpen} />
                 </div>
              </div>
+             {zoom > 1 && (
+               <button
+                 type="button"
+                 onClick={() => setZoom(1)}
+                 className="absolute -bottom-12 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full border border-[#fcd34d]/35 bg-[#14122c]/85 px-3 py-1.5 text-[10px] font-semibold tracking-wide text-[#fcd34d] shadow-lg backdrop-blur-md"
+               >
+                 <RotateCcw size={13} /> Đặt lại zoom
+               </button>
+             )}
         </div>
     )
 }
