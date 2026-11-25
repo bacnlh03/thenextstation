@@ -15,6 +15,8 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
   const [lightboxOffset, setLightboxOffset] = useState({ x: 0, y: 0 })
   const panRef = useRef<{ pointerId: number; startX: number; startY: number; originX: number; originY: number } | null>(null)
   const swipeRef = useRef<{ pointerId: number; startX: number; startY: number } | null>(null)
+  const lightboxPointersRef = useRef(new Map<number, { x: number; y: number }>())
+  const lightboxPinchRef = useRef<{ distance: number; zoom: number } | null>(null)
   const lightboxImageRef = useRef<HTMLImageElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(400)
@@ -262,6 +264,18 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
             onClick={event => event.stopPropagation()}
             onPointerDown={event => {
               event.stopPropagation()
+              lightboxPointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+              if (lightboxPointersRef.current.size === 2) {
+                const [first, second] = Array.from(lightboxPointersRef.current.values())
+                lightboxPinchRef.current = {
+                  distance: Math.hypot(second.x - first.x, second.y - first.y),
+                  zoom: lightboxZoom,
+                }
+                swipeRef.current = null
+                panRef.current = null
+                event.currentTarget.setPointerCapture(event.pointerId)
+                return
+              }
               swipeRef.current = {
                 pointerId: event.pointerId,
                 startX: event.clientX,
@@ -278,6 +292,22 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
               event.currentTarget.setPointerCapture(event.pointerId)
             }}
             onPointerMove={event => {
+              const pointer = lightboxPointersRef.current
+              if (pointer.has(event.pointerId)) {
+                pointer.set(event.pointerId, { x: event.clientX, y: event.clientY })
+              }
+
+              const pinch = lightboxPinchRef.current
+              if (pinch && pointer.size === 2) {
+                event.preventDefault()
+                const [first, second] = Array.from(pointer.values())
+                const distance = Math.hypot(second.x - first.x, second.y - first.y)
+                const nextZoom = Math.min(4, Math.max(1, Number((pinch.zoom * distance / pinch.distance).toFixed(2))))
+                setLightboxZoom(nextZoom)
+                setLightboxOffset(current => nextZoom === 1 ? { x: 0, y: 0 } : clampLightboxOffset(current, nextZoom))
+                return
+              }
+
               const pan = panRef.current
               if (!pan || pan.pointerId !== event.pointerId) return
               setLightboxOffset(clampLightboxOffset({
@@ -286,6 +316,14 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
               }, lightboxZoom))
             }}
             onPointerUp={event => {
+              const wasPinching = lightboxPinchRef.current !== null
+              lightboxPointersRef.current.delete(event.pointerId)
+              if (lightboxPointersRef.current.size < 2) lightboxPinchRef.current = null
+              if (wasPinching) {
+                swipeRef.current = null
+                panRef.current = null
+                return
+              }
               if (panRef.current?.pointerId === event.pointerId) panRef.current = null
               const swipe = swipeRef.current
               if (swipe?.pointerId === event.pointerId) {
@@ -297,7 +335,12 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
                 }
               }
             }}
-            onPointerCancel={() => { panRef.current = null; swipeRef.current = null }}
+            onPointerCancel={() => {
+              lightboxPointersRef.current.clear()
+              lightboxPinchRef.current = null
+              panRef.current = null
+              swipeRef.current = null
+            }}
             className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl transition-transform duration-200 ease-out cursor-grab active:cursor-grabbing"
             style={{
               transform: `translate(${lightboxOffset.x}px, ${lightboxOffset.y}px) scale(${lightboxZoom})`,
