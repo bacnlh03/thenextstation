@@ -42,7 +42,12 @@ function AddressLine({
   isEditor: boolean
 }) {
   if (isEditor) {
-    return <span>{text}</span>
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <MapPin size={13} className="shrink-0 text-[#fcd34d]/70" />
+        <span>{text}</span>
+      </span>
+    )
   }
 
   return (

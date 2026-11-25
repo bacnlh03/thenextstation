@@ -137,7 +137,7 @@ export function InvitationPage() {
       }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Pacifico&family=Quicksand:wght@300;400;500;700&family=Charm:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Oswald:wght@200;400;700&family=Roboto:wght@300;400;500;700&family=Open+Sans:ital,wght@0,300;0,400;0,700;1,400&family=Saira+Stencil+One&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Allura&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=Dancing+Script:wght@400;700&family=Playwrite+AU+SA+Guides:wght@100..400&family=Momo+Signature&family=Great+Vibes&family=Pacifico&family=Quicksand:wght@300;400;500;700&family=Charm:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Oswald:wght@200;400;700&family=Roboto:wght@300;400;500;700&family=Open+Sans:ital,wght@0,300;0,400;0,700;1,400&family=Saira+Stencil+One&display=swap');
         .font-luxury-serif { font-family: 'Playfair Display', serif; }
         .font-luxury-sans { font-family: 'Montserrat', sans-serif; }
 

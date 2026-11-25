@@ -5,11 +5,12 @@ import { normalizeMomentPhoto } from '@/types/design'
 import { 
   Type, Save, GraduationCap, AlignHorizontalJustifyCenter, AlignVerticalJustifyCenter, 
   Undo, Redo, Layers, ArrowUp, RotateCw, RotateCcw, Smile, Eye, X, Music, Volume2, 
-  Images, Plus, Trash2, Sparkles, Grid 
+  Images, Plus, Trash2, Sparkles, Grid, MapPin
 } from 'lucide-react'
 import { MobileDesigner } from '@/components/designer/MobileDesigner'
 import { PhotoCollageCanvas } from '@/components/designer/PhotoCollageCanvas'
 import { getImageAspectRatio } from '@/lib/image'
+import { hasMapLocation } from '@/lib/map'
 import clsx from 'clsx'
 
 const FONTS = [
@@ -21,7 +22,10 @@ const FONTS = [
   { name: 'Open Sans', label: 'Open Sans (Neutral Sans)' },
   { name: 'Quicksand', label: 'Quicksand (Round Sans)' },
   { name: 'Oswald', label: 'Oswald (Strong Sans)' },
+  { name: 'Allura', label: 'Allura (Calligraphy)' },
   { name: 'Dancing Script', label: 'Dancing Script (Handwriting)' },
+  { name: 'Playwrite AU SA Guides', label: 'Playwrite Australia SA Guides (Handwriting)' },
+  { name: 'Momo Signature', label: 'Momo Signature (Signature)' },
   { name: 'Great Vibes', label: 'Great Vibes (Calligraphy)' },
   { name: 'Pacifico', label: 'Pacifico (Retro Script)' },
   { name: 'Charm', label: 'Charm (Decorative Serif)' },
@@ -1465,6 +1469,11 @@ export function DesignerPage() {
                              transform: `rotate(${el.rotation || 0}deg)`
                          }}
                      >
+                         {el.type !== 'image' && hasMapLocation(el) && (
+                             <span className="relative -top-0.5 inline-flex items-center align-middle mr-1.5">
+                                 <MapPin size={13} className="shrink-0 text-[#fcd34d]/70" />
+                             </span>
+                         )}
                          {el.type === 'dynamic' && el.field === 'full_name' ? '{Tên Khách Mời}' : (
                              el.type === 'image' ? (
                                  normalizeUrl(el.content) ? (

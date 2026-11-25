@@ -3,13 +3,14 @@ import { useDesignStore, normalizeUrl } from '@/stores/useDesignStore'
 import { 
   Type, Save, GraduationCap, Eye, Layers, Music, Volume2, Images, 
   Trash2, ChevronRight, ArrowLeft, ArrowUp, ArrowDown, Plus, GripVertical,
-  Sparkles, Grid, RotateCcw, RotateCw
+  Sparkles, Grid, RotateCcw, RotateCw, MapPin
 } from 'lucide-react'
 import { normalizeMomentPhoto } from '@/types/design'
 import type { MomentPhoto, PhotoFrameStyle } from '@/types/design'
 import { InvitationRenderer } from '@/components/InvitationRenderer'
 import { PhotoCollageCanvas } from '@/components/designer/PhotoCollageCanvas'
 import { getImageAspectRatio } from '@/lib/image'
+import { hasMapLocation } from '@/lib/map'
 import clsx from 'clsx'
 
 const FONTS = [
@@ -21,7 +22,10 @@ const FONTS = [
   { name: 'Open Sans', label: 'Open Sans (Neutral Sans)' },
   { name: 'Quicksand', label: 'Quicksand (Round Sans)' },
   { name: 'Oswald', label: 'Oswald (Strong Sans)' },
+  { name: 'Allura', label: 'Allura (Calligraphy)' },
   { name: 'Dancing Script', label: 'Dancing Script (Handwriting)' },
+  { name: 'Playwrite AU SA Guides', label: 'Playwrite Australia SA Guides (Handwriting)' },
+  { name: 'Momo Signature', label: 'Momo Signature (Signature)' },
   { name: 'Great Vibes', label: 'Great Vibes (Calligraphy)' },
   { name: 'Pacifico', label: 'Pacifico (Retro Script)' },
   { name: 'Charm', label: 'Charm (Decorative Serif)' },
@@ -490,8 +494,11 @@ export function MobileDesigner({
                           {idx + 1}
                         </span>
                         <div className="min-w-0">
-                          <p className="text-xs font-bold text-slate-800 truncate">
-                            {el.type === 'dynamic' ? '[Tên khách mời]' : (el.content || `[${el.type}]`)}
+                          <p className="text-xs font-bold text-slate-800 truncate flex items-center gap-1.5">
+                            {hasMapLocation(el) && <MapPin size={13} className="shrink-0 text-[#fcd34d]/70" />}
+                            <span className="truncate">
+                              {el.type === 'dynamic' ? '[Tên khách mời]' : (el.content || `[${el.type}]`)}
+                            </span>
                           </p>
                           <p className="text-[10px] text-slate-400">
                             Loại: {el.type} · Cỡ: {el.style?.fontSize || 'mặc định'}
