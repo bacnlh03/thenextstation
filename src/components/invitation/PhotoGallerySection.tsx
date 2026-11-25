@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { Camera, X, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Camera, X, ZoomIn, ZoomOut, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react'
 import clsx from 'clsx'
 import { normalizeMomentPhoto } from '@/types/design'
 import type { PhotoItem } from '@/types/design'
@@ -232,24 +232,25 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
             </button>
             <button
               type="button"
-              onClick={event => {
-                event.stopPropagation()
-                setLightboxZoom(1)
-                setLightboxOffset({ x: 0, y: 0 })
-              }}
-              className="rounded-full px-2 py-1 text-xs font-medium hover:bg-white/20"
-              title="Đặt lại zoom"
-            >
-              {Math.round(lightboxZoom * 100)}%
-            </button>
-            <button
-              type="button"
               onClick={event => { event.stopPropagation(); changeLightboxZoom(0.25) }}
               className="rounded-full p-2 hover:bg-white/20 disabled:opacity-40"
               disabled={lightboxZoom >= 4}
               title="Phóng to"
             >
               <ZoomIn size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={event => {
+                event.stopPropagation()
+                setLightboxZoom(1)
+                setLightboxOffset({ x: 0, y: 0 })
+              }}
+              className="rounded-full p-2 hover:bg-white/20 disabled:opacity-40"
+              disabled={lightboxZoom === 1 && lightboxOffset.x === 0 && lightboxOffset.y === 0}
+              title="Đặt lại zoom"
+            >
+              <RotateCcw size={18} />
             </button>
           </div>
           <img

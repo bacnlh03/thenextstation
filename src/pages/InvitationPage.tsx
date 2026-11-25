@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef, type PointerEvent, type ReactNode } from 'react'
+import { useEffect, useState, useRef, type PointerEvent, type ReactNode, type TouchEvent } from 'react'
 import confetti from 'canvas-confetti'
-import { Volume2, VolumeX, ChevronDown, RotateCcw } from 'lucide-react'
+import { Volume2, VolumeX, ChevronDown } from 'lucide-react'
 import { useGuestStore } from '@/stores/useGuestStore'
 import { useDesignStore } from '@/stores/useDesignStore'
 import { InvitationRenderer } from '@/components/InvitationRenderer'
@@ -304,6 +304,7 @@ function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen }: {
     const [zoom, setZoom] = useState(1)
     const pointersRef = useRef(new Map<number, { x: number; y: number }>())
     const pinchStartRef = useRef<{ distance: number; zoom: number } | null>(null)
+    const touchPinchStartRef = useRef<{ distance: number; zoom: number } | null>(null)
 
     useEffect(() => {
         const updateScale = () => {
@@ -360,6 +361,34 @@ function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen }: {
         if (pointersRef.current.size < 2) pinchStartRef.current = null
     }
 
+    const getTouchDistance = (touches: TouchList) => {
+        const first = touches[0]
+        const second = touches[1]
+        return Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY)
+    }
+
+    const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+        if (event.touches.length !== 2) return
+        touchPinchStartRef.current = {
+            distance: getTouchDistance(event.touches),
+            zoom,
+        }
+    }
+
+    const handleTouchMove = (event: TouchEvent<HTMLDivElement>) => {
+        const pinch = touchPinchStartRef.current
+        if (!pinch || event.touches.length !== 2) return
+        event.preventDefault()
+        const distance = getTouchDistance(event.touches)
+        if (pinch.distance > 0) {
+            setZoom(clampZoom(pinch.zoom * distance / pinch.distance))
+        }
+    }
+
+    const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+        if (event.touches.length < 2) touchPinchStartRef.current = null
+    }
+
     return (
         <div
           ref={containerRef}
@@ -368,6 +397,10 @@ function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen }: {
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerEnd}
           onPointerCancel={handlePointerEnd}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
           style={{ touchAction: 'none' }}
         >
              <div
@@ -398,15 +431,6 @@ function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen }: {
                   <BookCoverReveal scale={scale} onOpen={onOpen} />
                 </div>
              </div>
-             {zoom > 1 && (
-               <button
-                 type="button"
-                 onClick={() => setZoom(1)}
-                 className="absolute -bottom-12 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full border border-[#fcd34d]/35 bg-[#14122c]/85 px-3 py-1.5 text-[10px] font-semibold tracking-wide text-[#fcd34d] shadow-lg backdrop-blur-md"
-               >
-                 <RotateCcw size={13} /> Đặt lại zoom
-               </button>
-             )}
         </div>
     )
 }
