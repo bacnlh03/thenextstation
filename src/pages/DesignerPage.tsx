@@ -31,7 +31,7 @@ const FONTS = [
 export function DesignerPage() {
   const { 
       config, selectedElementId, loading, fetchConfig, saveConfig, 
-      selectElement, updateElement, addElement, moveElement, updateBackground, updateMusic, updatePhotos, updatePhotoLayout, uploadFile, removeElement,
+      selectElement, updateElement, addElement, moveElement, updateBackground, updateMusic, updatePhotos, updatePhotoLayout, uploadFile, removeElement, optimizeExistingPhotos, restoreOriginalPhotoLinks,
       undo, redo, past, future, pushStateToHistory,
       bringToFront, sendToBack
   } = useDesignStore()
@@ -57,6 +57,8 @@ export function DesignerPage() {
   const [activeTab, setActiveTab] = useState<'design' | 'music' | 'photos'>('design')
   const [isPlaying, setIsPlaying] = useState(false)
   const [photoUploading, setPhotoUploading] = useState(false)
+  const [optimizingPhotos, setOptimizingPhotos] = useState(false)
+  const [restoringOriginalPhotos, setRestoringOriginalPhotos] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
 
   // Photos Collage Studio State
@@ -116,6 +118,30 @@ export function DesignerPage() {
       }
     })
     updatePhotos(list)
+  }
+
+  const handleOptimizeExistingPhotos = async () => {
+    if (!normalizedPhotos.length || optimizingPhotos || photoUploading) return
+    if (!window.confirm(`Tối ưu ${normalizedPhotos.length} ảnh hiện có? Ảnh gốc sẽ được giữ lại.`)) return
+
+    setOptimizingPhotos(true)
+    try {
+      await optimizeExistingPhotos()
+    } finally {
+      setOptimizingPhotos(false)
+    }
+  }
+
+  const handleRestoreOriginalPhotos = async () => {
+    if (restoringOriginalPhotos || optimizingPhotos || photoUploading || normalizedPhotos.length !== 25) return
+    if (!window.confirm('Khôi phục liên kết ảnh gốc cho 25 ảnh? Không xóa hay upload lại file nào.')) return
+
+    setRestoringOriginalPhotos(true)
+    try {
+      await restoreOriginalPhotoLinks()
+    } finally {
+      setRestoringOriginalPhotos(false)
+    }
   }
 
   const previewAudioRef = useRef<HTMLAudioElement | null>(null)
@@ -1069,6 +1095,25 @@ export function DesignerPage() {
                         )}
                     </label>
 
+                    <button
+                        type="button"
+                        onClick={handleOptimizeExistingPhotos}
+                        disabled={optimizingPhotos || photoUploading || !normalizedPhotos.length}
+                        className="w-full py-2.5 px-3 flex items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        <Sparkles size={15} />
+                        {optimizingPhotos ? 'Đang tối ưu ảnh…' : `Tối ưu ${normalizedPhotos.length} ảnh hiện có`}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handleRestoreOriginalPhotos}
+                        disabled={restoringOriginalPhotos || optimizingPhotos || photoUploading || normalizedPhotos.length !== 25}
+                        className="w-full py-2.5 px-3 flex items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 text-xs font-semibold text-sky-700 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {restoringOriginalPhotos ? 'Đang khôi phục liên kết…' : 'Khôi phục liên kết ảnh gốc'}
+                    </button>
+
                     {/* Selected Photo Inspector */}
                     {selectedPhoto ? (
                         <div className="p-3.5 bg-indigo-50/60 border border-indigo-200 rounded-xl space-y-3.5 animate-in fade-in duration-200">
@@ -1287,6 +1332,8 @@ export function DesignerPage() {
                                             <img
                                                 src={photo.url}
                                                 alt={`Ảnh ${i + 1}`}
+                                                loading="lazy"
+                                                decoding="async"
                                                 className="w-full h-full object-cover"
                                             />
                                             <div className="absolute top-1 left-1 bg-black/60 backdrop-blur-sm text-white px-1.5 py-0.2 rounded text-[9px] font-mono">

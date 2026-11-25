@@ -48,11 +48,13 @@ export function MobileDesigner({
 }: Props) {
   const {
     config, selectedElementId, loading, saveConfig,
-    selectElement, updateElement, addElement, updateBackground, updateMusic, updatePhotos, updatePhotoLayout, uploadFile, removeElement
+    selectElement, updateElement, addElement, updateBackground, updateMusic, updatePhotos, updatePhotoLayout, uploadFile, removeElement, optimizeExistingPhotos, restoreOriginalPhotoLinks
   } = useDesignStore()
 
   const [activeTab, setActiveTab] = useState<'content' | 'theme' | 'music' | 'photos'>('content')
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null)
+  const [optimizingPhotos, setOptimizingPhotos] = useState(false)
+  const [restoringOriginalPhotos, setRestoringOriginalPhotos] = useState(false)
 
   const normalizedPhotos: MomentPhoto[] = (config.photos || []).map((p, i) =>
     normalizeMomentPhoto(p, i, config.photos?.length || 1)
@@ -151,6 +153,30 @@ export function MobileDesigner({
       updateBackground({ image: url })
     }
     e.target.value = ''
+  }
+
+  const handleOptimizeExistingPhotos = async () => {
+    if (!normalizedPhotos.length || optimizingPhotos) return
+    if (!window.confirm(`Tối ưu ${normalizedPhotos.length} ảnh hiện có? Ảnh gốc sẽ được giữ lại.`)) return
+
+    setOptimizingPhotos(true)
+    try {
+      await optimizeExistingPhotos()
+    } finally {
+      setOptimizingPhotos(false)
+    }
+  }
+
+  const handleRestoreOriginalPhotos = async () => {
+    if (restoringOriginalPhotos || optimizingPhotos || !normalizedPhotos.length) return
+    if (!window.confirm('Khôi phục liên kết ảnh gốc cho 25 ảnh? Không xóa hay upload lại file nào.')) return
+
+    setRestoringOriginalPhotos(true)
+    try {
+      await restoreOriginalPhotoLinks()
+    } finally {
+      setRestoringOriginalPhotos(false)
+    }
   }
 
   const handleUploadAudio = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -622,6 +648,25 @@ export function MobileDesigner({
               />
             </label>
 
+            <button
+              type="button"
+              onClick={handleOptimizeExistingPhotos}
+              disabled={optimizingPhotos || photoUploading || !normalizedPhotos.length}
+              className="w-full py-2.5 px-3 flex items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Sparkles size={15} />
+              {optimizingPhotos ? 'Đang tối ưu ảnh...' : `Tối ưu ${normalizedPhotos.length} ảnh hiện có`}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleRestoreOriginalPhotos}
+              disabled={restoringOriginalPhotos || optimizingPhotos || photoUploading || normalizedPhotos.length !== 25}
+              className="w-full py-2.5 px-3 flex items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 text-xs font-semibold text-sky-700 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {restoringOriginalPhotos ? 'Đang khôi phục liên kết...' : 'Khôi phục liên kết ảnh gốc'}
+            </button>
+
             {/* Direct touch canvas for positioning photos on mobile */}
             <div className="px-4">
               <PhotoCollageCanvas />
@@ -835,7 +880,7 @@ export function MobileDesigner({
                           isSelected ? "ring-2 ring-indigo-600 border-indigo-600" : "border-slate-200"
                         )}
                       >
-                        <img src={photo.url} alt={`Ảnh ${i + 1}`} className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
+                        <img src={photo.url} alt={`Ảnh ${i + 1}`} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
 
                         {/* Top Bar with Badge & Delete */}
                         <div className="relative z-10 flex items-center justify-between p-1.5 bg-gradient-to-b from-black/60 to-transparent">

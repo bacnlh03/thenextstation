@@ -32,6 +32,8 @@ export type PhotoFrameStyle = 'polaroid' | 'gold' | 'borderless'
 export interface MomentPhoto {
   id: string
   url: string
+  originalUrl?: string
+  thumbnailUrl?: string
   x: number
   y: number
   width: number
@@ -52,6 +54,7 @@ export function normalizeMomentPhoto(
     return {
       id: item.id || `photo_${index}`,
       url: item.url,
+      thumbnailUrl: item.thumbnailUrl,
       x: typeof item.x === 'number' ? item.x : (index % 2 === 0 ? 25 : 185),
       y: typeof item.y === 'number' ? item.y : 20 + index * 125,
       width: item.width || 175,

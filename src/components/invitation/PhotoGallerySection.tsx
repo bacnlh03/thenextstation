@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
-import { Camera, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { Camera, X, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react'
 import clsx from 'clsx'
 import { normalizeMomentPhoto } from '@/types/design'
 import type { PhotoItem } from '@/types/design'
@@ -10,17 +10,19 @@ interface Props {
 }
 
 export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
-  if (!photos || !photos.length) return null
-
-  const [activeLightboxUrl, setActiveLightboxUrl] = useState<string | null>(null)
+  const [activeLightboxIndex, setActiveLightboxIndex] = useState<number | null>(null)
   const [lightboxZoom, setLightboxZoom] = useState(1)
   const [lightboxOffset, setLightboxOffset] = useState({ x: 0, y: 0 })
   const panRef = useRef<{ pointerId: number; startX: number; startY: number; originX: number; originY: number } | null>(null)
+  const swipeRef = useRef<{ pointerId: number; startX: number; startY: number } | null>(null)
   const lightboxImageRef = useRef<HTMLImageElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(400)
 
-  const normalized = photos.map((p, i) => normalizeMomentPhoto(p, i, photos.length))
+  const normalized = useMemo(
+    () => (photos || []).map((p, i) => normalizeMomentPhoto(p, i, photos.length)),
+    [photos],
+  )
 
   // A photo can be moved/resized beyond the original 400px editor canvas.
   // Include the actual right edge of every photo so the whole design is
@@ -51,17 +53,44 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
     return Math.max(acc, p.y + approxH)
   }, 420) + 40
 
-  const openLightbox = (url: string) => {
-    setActiveLightboxUrl(url)
+  const activeLightboxUrl = activeLightboxIndex === null
+    ? null
+    : (() => {
+        const photo = normalized[activeLightboxIndex]
+        return photo ? photo.originalUrl || photo.url : null
+      })()
+
+  const openLightbox = (index: number) => {
+    setActiveLightboxIndex(index)
     setLightboxZoom(1)
     setLightboxOffset({ x: 0, y: 0 })
   }
 
   const closeLightbox = () => {
-    setActiveLightboxUrl(null)
+    setActiveLightboxIndex(null)
     setLightboxZoom(1)
     setLightboxOffset({ x: 0, y: 0 })
   }
+
+  const changeLightboxPhoto = (direction: -1 | 1) => {
+    if (activeLightboxIndex === null || normalized.length < 2) return
+    setActiveLightboxIndex((activeLightboxIndex + direction + normalized.length) % normalized.length)
+    setLightboxZoom(1)
+    setLightboxOffset({ x: 0, y: 0 })
+  }
+
+  useEffect(() => {
+    if (activeLightboxIndex === null) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowLeft') changeLightboxPhoto(-1)
+      if (event.key === 'ArrowRight') changeLightboxPhoto(1)
+      if (event.key === 'Escape') closeLightbox()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [activeLightboxIndex, normalized.length])
+
+  if (!photos || !photos.length) return null
 
   const changeLightboxZoom = (amount: number) => {
     setLightboxZoom(value => {
@@ -116,8 +145,9 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
             <PhotoTile
               key={photo.id || photo.url + i}
               url={photo.url}
+              thumbnailUrl={photo.thumbnailUrl}
               index={i}
-              onClick={() => openLightbox(photo.url)}
+              onClick={() => openLightbox(i)}
             />
           ))}
         </div>
@@ -145,7 +175,7 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
                   key={photo.id || photo.url + i}
                   photo={photo}
                   index={i}
-                  onClick={() => openLightbox(photo.url)}
+                  onClick={() => openLightbox(i)}
                 />
               ))}
             </div>
@@ -167,6 +197,29 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
           >
             <X size={20} />
           </button>
+          {normalized.length > 1 && (
+            <>
+              <button
+                type="button"
+                aria-label="Ảnh trước"
+                onClick={event => { event.stopPropagation(); changeLightboxPhoto(-1) }}
+                className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/20 p-2.5 text-white backdrop-blur-sm transition hover:bg-white/30"
+              >
+                <ChevronLeft size={24} />
+              </button>
+              <button
+                type="button"
+                aria-label="Ảnh tiếp theo"
+                onClick={event => { event.stopPropagation(); changeLightboxPhoto(1) }}
+                className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/20 p-2.5 text-white backdrop-blur-sm transition hover:bg-white/30"
+              >
+                <ChevronRight size={24} />
+              </button>
+              <div className="absolute top-5 left-1/2 -translate-x-1/2 z-10 rounded-full bg-black/50 px-3 py-1 text-xs text-white">
+                {(activeLightboxIndex ?? 0) + 1} / {normalized.length}
+              </div>
+            </>
+          )}
           <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 rounded-full bg-black/60 p-1 text-white backdrop-blur-md">
             <button
               type="button"
@@ -208,6 +261,11 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
             onClick={event => event.stopPropagation()}
             onPointerDown={event => {
               event.stopPropagation()
+              swipeRef.current = {
+                pointerId: event.pointerId,
+                startX: event.clientX,
+                startY: event.clientY,
+              }
               if (lightboxZoom <= 1) return
               panRef.current = {
                 pointerId: event.pointerId,
@@ -228,8 +286,17 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
             }}
             onPointerUp={event => {
               if (panRef.current?.pointerId === event.pointerId) panRef.current = null
+              const swipe = swipeRef.current
+              if (swipe?.pointerId === event.pointerId) {
+                const deltaX = event.clientX - swipe.startX
+                const deltaY = event.clientY - swipe.startY
+                swipeRef.current = null
+                if (lightboxZoom <= 1 && Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
+                  changeLightboxPhoto(deltaX < 0 ? 1 : -1)
+                }
+              }
             }}
-            onPointerCancel={() => { panRef.current = null }}
+            onPointerCancel={() => { panRef.current = null; swipeRef.current = null }}
             className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl transition-transform duration-200 ease-out cursor-grab active:cursor-grabbing"
             style={{
               transform: `translate(${lightboxOffset.x}px, ${lightboxOffset.y}px) scale(${lightboxZoom})`,
@@ -273,6 +340,8 @@ function CollagePhotoCard({
         width: photo.width,
         transform: `rotate(${photo.rotation}deg)`,
         zIndex: photo.zIndex || index + 1,
+        contentVisibility: 'auto',
+        containIntrinsicSize: '220px',
       }}
     >
       <div
@@ -282,11 +351,12 @@ function CollagePhotoCard({
         )}
       >
         <img
-          src={photo.url}
+          src={photo.thumbnailUrl || photo.url}
+          data-full-src={photo.url}
           alt={`Khoảnh khắc ${index + 1}`}
           // Collage cards are absolutely positioned inside a scaled canvas;
           // lazy loading can incorrectly consider some of them off-screen.
-          loading="eager"
+          loading="lazy"
           fetchPriority={index < 2 ? 'high' : 'auto'}
           decoding="async"
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -305,10 +375,12 @@ function CollagePhotoCard({
 
 function PhotoTile({
   url,
+  thumbnailUrl,
   index,
   onClick,
 }: {
   url: string
+  thumbnailUrl?: string
   index: number
   onClick: () => void
 }) {
@@ -321,9 +393,10 @@ function PhotoTile({
       )}
     >
       <img
-        src={url}
+        src={thumbnailUrl || url}
+        data-full-src={url}
         alt={`Ảnh ${index + 1}`}
-        loading="eager"
+        loading="lazy"
         decoding="async"
         className="w-full h-auto object-cover pointer-events-none"
       />
