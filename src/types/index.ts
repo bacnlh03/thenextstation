@@ -5,12 +5,13 @@ export interface Guest {
   status: number // 0=Chưa gửi, 1=Đã gửi, 2=Xác nhận
   allow_wishes?: boolean
   allow_meal_invite?: boolean
+  meal_status?: number
   updated_at: string
 }
 
 export interface GuestFilter {
   search: string
-  status: string // 'all' | '0' | '1' | '2'
+  mealStatus: string // 'all' | '0' | '1' | '2'
 }
 
 export type ToastType = 'success' | 'error' | 'info'

@@ -19,6 +19,7 @@ export function InvitationPage() {
   
   const getGuestById = useGuestStore(state => state.getGuestById)
   const confirmAttendance = useGuestStore(state => state.confirmAttendance)
+  const respondMeal = useGuestStore(state => state.respondMeal)
   const { config, fetchConfig } = useDesignStore()
   
   const [guestId, setGuestId] = useState<string | null>(null)
@@ -26,6 +27,7 @@ export function InvitationPage() {
   const [isConfirmed, setIsConfirmed] = useState<number>(0)
   const [allowWishes, setAllowWishes] = useState<boolean>(true)
   const [allowMealInvite, setAllowMealInvite] = useState<boolean>(false)
+  const [mealStatus, setMealStatus] = useState(0)
   const [isVisible, setIsVisible] = useState(false)
   const [isOpened, setIsOpened] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -45,6 +47,9 @@ export function InvitationPage() {
           }
           if (typeof guest.allow_meal_invite === 'boolean') {
             setAllowMealInvite(guest.allow_meal_invite)
+          }
+          if (typeof guest.meal_status === 'number') {
+            setMealStatus(guest.meal_status)
           }
         }
       }
@@ -288,7 +293,12 @@ export function InvitationPage() {
                 <span className="text-[#fcd34d]/30 text-xs">✦</span>
                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#fcd34d]/20 to-transparent" />
               </div>
-              <section><MealInviteSection invite={config.mealInvite!} /></section>
+              <section><MealInviteSection invite={config.mealInvite!} mealStatus={mealStatus} onRespond={async (nextStatus) => {
+                if (!guestId) return false
+                const success = await respondMeal(guestId, nextStatus)
+                if (success) setMealStatus(nextStatus)
+                return success
+              }} /></section>
             </>
           )}
         </div>

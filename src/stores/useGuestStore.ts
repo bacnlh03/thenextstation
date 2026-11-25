@@ -54,6 +54,7 @@ interface GuestState {
   updateStatus: (id: string, status: number) => Promise<boolean>
   toggleAllowWishes: (id: string, allow: boolean) => Promise<boolean>
   toggleAllowMealInvite: (id: string, allow: boolean) => Promise<boolean>
+  respondMeal: (id: string, mealStatus: number) => Promise<boolean>
   deleteGuest: (id: string) => Promise<boolean>
   getGuestById: (id: string) => Promise<Guest | null>
   confirmAttendance: (id: string) => Promise<boolean>
@@ -66,7 +67,7 @@ interface GuestState {
 export const useGuestStore = create<GuestState>((set, get) => ({
   guests: [],
   loading: false,
-  filter: { search: '', status: 'all' },
+  filter: { search: '', mealStatus: 'all' },
   selectedIds: new Set(),
   isAllSelected: false,
 
@@ -82,8 +83,8 @@ export const useGuestStore = create<GuestState>((set, get) => ({
       if (filter.search) {
         query = query.ilike('full_name', `%${filter.search}%`)
       }
-      if (filter.status !== 'all') {
-        query = query.eq('status', Number(filter.status))
+      if (filter.mealStatus !== 'all') {
+        query = query.eq('meal_status', Number(filter.mealStatus))
       }
 
       const { data, error } = await query
@@ -210,6 +211,21 @@ export const useGuestStore = create<GuestState>((set, get) => ({
     await get().fetchGuests()
     useToastStore.getState().showToast('Lỗi cập nhật lời mời đi ăn', 'error')
     return false
+  },
+
+  respondMeal: async (id, mealStatus) => {
+    try {
+      const { error } = await supabase.rpc('respond_guest_meal', {
+        guest_id: id,
+        meal_status: mealStatus,
+      })
+      if (error) throw error
+      return true
+    } catch (err) {
+      console.error(err)
+      useToastStore.getState().showToast('Không thể cập nhật lựa chọn đi ăn', 'error')
+      return false
+    }
   },
 
   deleteGuest: async (id) => {

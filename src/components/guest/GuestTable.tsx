@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckCircle, XCircle, Send, Pencil, Save, X, Trash2, Loader2, Link2, Check, MessageSquareHeart, MessageSquareOff, Utensils } from 'lucide-react'
+import { Pencil, Save, X, Trash2, Loader2, Link2, Check, MessageSquareHeart, MessageSquareOff, Utensils } from 'lucide-react'
 import type { Guest } from '@/types'
 import clsx from 'clsx'
 
@@ -8,15 +8,13 @@ interface Props {
   loading: boolean
   onUpdateName: (id: string, name: string) => void
   onDelete: (id: string) => void
-  onUpdateStatus: (id: string, status: number) => void
   onToggleAllowWishes?: (id: string, allow: boolean) => void
   onToggleAllowMealInvite?: (id: string, allow: boolean) => void
 }
 
-export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateStatus, onToggleAllowWishes, onToggleAllowMealInvite }: Props) {
+export function GuestTable({ guests, loading, onUpdateName, onDelete, onToggleAllowWishes, onToggleAllowMealInvite }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editNameModel, setEditNameModel] = useState('')
-  const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const copyUrl = (guest: Guest) => {
@@ -132,49 +130,6 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
 
             {/* Bottom row: Status & Wishes setting */}
             <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-200/60">
-              <div className="relative">
-                <button
-                  onClick={(e) => { e.stopPropagation(); setStatusDropdownId(statusDropdownId === guest.id ? null : guest.id) }}
-                  className={clsx(
-                    "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border select-none transition-all active:scale-95",
-                    guest.status === 2 && 'bg-green-100 text-green-700 border-green-200',
-                    guest.status === 1 && 'bg-blue-100 text-blue-700 border-blue-200',
-                    guest.status === 0 && 'bg-white text-slate-600 border-slate-300',
-                  )}
-                >
-                  {guest.status === 2 && <><CheckCircle size={13} />XÁC NHẬN</>}
-                  {guest.status === 1 && <><Send size={13} />ĐÃ GỬI</>}
-                  {guest.status === 0 && <><XCircle size={13} />CHƯA GỬI</>}
-                </button>
-
-                {statusDropdownId === guest.id && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setStatusDropdownId(null)} />
-                    <div className="absolute left-0 bottom-full mb-1 z-50 bg-white border border-slate-200 rounded-lg shadow-xl py-1 min-w-[140px] animate-in fade-in slide-in-from-bottom-1">
-                      {[
-                        { value: 0, label: 'Chưa gửi',  icon: <XCircle size={14} />,     cls: 'text-slate-500' },
-                        { value: 1, label: 'Đã gửi',    icon: <Send size={14} />,          cls: 'text-blue-600' },
-                        { value: 2, label: 'Xác nhận',  icon: <CheckCircle size={14} />,  cls: 'text-green-600' },
-                      ].map((opt) => (
-                        <button
-                          key={opt.value}
-                          onClick={() => { onUpdateStatus(guest.id, opt.value); setStatusDropdownId(null) }}
-                          className={clsx(
-                            "w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold hover:bg-slate-50 transition-colors",
-                            opt.cls,
-                            guest.status === opt.value && 'bg-slate-50'
-                          )}
-                        >
-                          {opt.icon}
-                          {opt.label}
-                          {guest.status === opt.value && <span className="ml-auto text-slate-400">✓</span>}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-
               {/* Wishes button */}
               <button
                 type="button"
@@ -209,6 +164,12 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
                 <Utensils size={13} /><span>Ăn: {guest.allow_meal_invite === true ? 'Bật' : 'Tắt'}</span>
               </button>
             </div>
+            {guest.allow_meal_invite === true && (
+              <div className="flex items-center justify-between border-t border-slate-200/60 pt-2 text-xs">
+                <span className="text-slate-500">Phản hồi đi ăn</span>
+                <MealResponseBadge status={guest.meal_status} />
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -220,9 +181,9 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
           <tr>
             <th className="p-4 w-[5%] text-center bg-slate-50">#</th>
             <th className="p-4 w-[35%] bg-slate-50">Họ và Tên</th>
-            <th className="p-4 w-[18%] bg-slate-50">Trạng thái</th>
             <th className="p-4 w-[15%] text-center bg-slate-50">Lời chúc</th>
             <th className="p-4 w-[15%] text-center bg-slate-50">Mời ăn</th>
+            <th className="p-4 w-[15%] text-center bg-slate-50">Phản hồi ăn</th>
             <th className="p-4 w-[17%] bg-slate-50">Cập nhật lúc</th>
             <th className="p-4 text-right bg-slate-50">Hành động</th>
           </tr>
@@ -231,7 +192,7 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
           
           {loading && (
             <tr>
-              <td colSpan={6} className="py-12 text-center text-slate-400">
+              <td colSpan={7} className="py-12 text-center text-slate-400">
                 <div className="flex justify-center items-center gap-2">
                   <Loader2 className="animate-spin" /> Đang tải...
                 </div>
@@ -241,7 +202,7 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
           
           {!loading && guests.length === 0 && (
             <tr>
-              <td colSpan={6} className="py-12 text-center text-slate-400 italic">Không có dữ liệu.</td>
+              <td colSpan={7} className="py-12 text-center text-slate-400 italic">Không có dữ liệu.</td>
             </tr>
           )}
           
@@ -270,54 +231,6 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
                     {guest.full_name}
                   </div>
                 )}
-              </td>
-
-              <td className="p-4">
-                <div className="relative">
-                  {/* Status badge — click to open dropdown */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setStatusDropdownId(statusDropdownId === guest.id ? null : guest.id) }}
-                    className={clsx(
-                      "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border select-none cursor-pointer transition-all hover:scale-105 hover:shadow-md active:scale-95",
-                      guest.status === 2 && 'bg-green-100 text-green-700 border-green-200',
-                      guest.status === 1 && 'bg-blue-100 text-blue-700 border-blue-200',
-                      guest.status === 0 && 'bg-slate-100 text-slate-500 border-slate-200',
-                    )}
-                  >
-                    {guest.status === 2 && <><CheckCircle size={14} />XÁC NHẬN</>}
-                    {guest.status === 1 && <><Send size={14} />ĐÃ GỬI</>}
-                    {guest.status === 0 && <><XCircle size={14} />CHƯA GỬI</>}
-                  </button>
-
-                  {/* Dropdown */}
-                  {statusDropdownId === guest.id && (
-                    <>
-                      {/* Backdrop to close on outside click */}
-                      <div className="fixed inset-0 z-40" onClick={() => setStatusDropdownId(null)} />
-                      <div className="absolute left-0 top-full mt-1 z-50 bg-white border border-slate-200 rounded-lg shadow-xl py-1 min-w-[140px] animate-in fade-in slide-in-from-top-1">
-                        {[
-                          { value: 0, label: 'Chưa gửi',  icon: <XCircle size={14} />,     cls: 'text-slate-500' },
-                          { value: 1, label: 'Đã gửi',    icon: <Send size={14} />,          cls: 'text-blue-600' },
-                          { value: 2, label: 'Xác nhận',  icon: <CheckCircle size={14} />,  cls: 'text-green-600' },
-                        ].map((opt) => (
-                          <button
-                            key={opt.value}
-                            onClick={() => { onUpdateStatus(guest.id, opt.value); setStatusDropdownId(null) }}
-                            className={clsx(
-                              "w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold hover:bg-slate-50 transition-colors",
-                              opt.cls,
-                              guest.status === opt.value && 'bg-slate-50'
-                            )}
-                          >
-                            {opt.icon}
-                            {opt.label}
-                            {guest.status === opt.value && <span className="ml-auto text-slate-400">✓</span>}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
               </td>
 
               <td className="p-4 text-center">
@@ -353,6 +266,7 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
                   <Utensils size={13} /><span>{guest.allow_meal_invite === true ? 'Cho phép' : 'Đã khóa'}</span>
                 </button>
               </td>
+              <td className="p-4 text-center">{guest.allow_meal_invite === true && <MealResponseBadge status={guest.meal_status} />}</td>
               
               <td className="p-4 text-sm text-slate-500 font-mono">{formatDate(guest.updated_at)}</td>
               
@@ -382,5 +296,18 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onUpdateSt
       </table>
       </div>
     </div>
+  )
+}
+
+function MealResponseBadge({ status }: { status?: number }) {
+  return (
+    <span className={clsx(
+      'inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap',
+      status === 1 && 'border-emerald-200 bg-emerald-50 text-emerald-700',
+      status === 2 && 'border-slate-200 bg-slate-100 text-slate-500',
+      (status === undefined || status === 0) && 'border-amber-200 bg-amber-50 text-amber-700',
+    )}>
+      {status === 1 ? 'Có đi ăn' : status === 2 ? 'Không đi' : 'Chưa trả lời'}
+    </span>
   )
 }

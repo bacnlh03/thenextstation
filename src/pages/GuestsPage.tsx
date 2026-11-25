@@ -24,7 +24,6 @@ export function GuestsPage() {
   const fetchGuests = useGuestStore(state => state.fetchGuests)
   const setFilter = useGuestStore(state => state.setFilter)
   const updateName = useGuestStore(state => state.updateName)
-  const updateStatus = useGuestStore(state => state.updateStatus)
   const toggleAllowWishes = useGuestStore(state => state.toggleAllowWishes)
   const toggleAllowMealInvite = useGuestStore(state => state.toggleAllowMealInvite)
   const deleteGuest = useGuestStore(state => state.deleteGuest)
@@ -36,7 +35,7 @@ export function GuestsPage() {
 
   useEffect(() => {
     fetchGuests()
-  }, [fetchGuests])
+  }, [fetchGuests, filter])
 
   const handleDelete = async () => {
     if (deleteId) {
@@ -85,7 +84,6 @@ export function GuestsPage() {
           loading={loading} 
           onUpdateName={updateName} 
           onDelete={setDeleteId}
-          onUpdateStatus={updateStatus}
           onToggleAllowWishes={toggleAllowWishes}
           onToggleAllowMealInvite={toggleAllowMealInvite}
         />

@@ -35,6 +35,7 @@ export interface Database {
           status: number
           allow_wishes?: boolean
           allow_meal_invite?: boolean
+          meal_status?: number
           updated_at: string
         }
         Insert: {
@@ -44,6 +45,7 @@ export interface Database {
           status?: number
           allow_wishes?: boolean
           allow_meal_invite?: boolean
+          meal_status?: number
           updated_at?: string
         }
         Update: {
@@ -53,6 +55,7 @@ export interface Database {
           status?: number
           allow_wishes?: boolean
           allow_meal_invite?: boolean
+          meal_status?: number
           updated_at?: string
         }
         Relationships: []
@@ -95,6 +98,7 @@ export interface Database {
           status: number
           allow_wishes?: boolean
           allow_meal_invite?: boolean
+          meal_status?: number
           updated_at: string
         }[]
       }
@@ -107,8 +111,13 @@ export interface Database {
           status: number
           allow_wishes?: boolean
           allow_meal_invite?: boolean
+          meal_status?: number
           updated_at: string
         }[]
+      }
+      respond_guest_meal: {
+        Args: { guest_id: string; meal_status: number }
+        Returns: undefined
       }
     }
     Enums: Record<string, never>

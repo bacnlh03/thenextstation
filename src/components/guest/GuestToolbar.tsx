@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { RefreshCw, Search, CheckCircle, XCircle, Send, ChevronDown } from 'lucide-react'
+import { RefreshCw, Search, CheckCircle, XCircle, HelpCircle, ChevronDown } from 'lucide-react'
 import type { GuestFilter } from '@/types'
 import clsx from 'clsx'
 
@@ -10,16 +10,16 @@ interface Props {
   onRefresh: () => void
 }
 
-const STATUS_OPTIONS = [
+const MEAL_OPTIONS = [
   { value: 'all',  label: 'Tất cả',    icon: null,                      badgeClass: 'bg-slate-100 text-slate-500 border-slate-200' },
-  { value: '0',    label: 'Chưa gửi',  icon: <XCircle size={13} />,     badgeClass: 'bg-slate-100 text-slate-500 border-slate-200' },
-  { value: '1',    label: 'Đã gửi',    icon: <Send size={13} />,         badgeClass: 'bg-blue-100 text-blue-600 border-blue-200' },
-  { value: '2',    label: 'Xác nhận',  icon: <CheckCircle size={13} />, badgeClass: 'bg-green-100 text-green-600 border-green-200' },
+  { value: '0',    label: 'Chưa trả lời', icon: <HelpCircle size={13} />, badgeClass: 'bg-amber-100 text-amber-700 border-amber-200' },
+  { value: '1',    label: 'Có đi ăn', icon: <CheckCircle size={13} />, badgeClass: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  { value: '2',    label: 'Không đi ăn', icon: <XCircle size={13} />, badgeClass: 'bg-slate-100 text-slate-500 border-slate-200' },
 ]
 
 export function GuestToolbar({ filter, loading, onFilterChange, onRefresh }: Props) {
   const [open, setOpen] = useState(false)
-  const current = STATUS_OPTIONS.find(o => o.value === filter.status) ?? STATUS_OPTIONS[0]
+  const current = MEAL_OPTIONS.find(o => o.value === filter.mealStatus) ?? MEAL_OPTIONS[0]
 
   return (
     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm">
@@ -38,7 +38,7 @@ export function GuestToolbar({ filter, loading, onFilterChange, onRefresh }: Pro
       {/* Filters */}
       <div className="flex gap-2 sm:gap-3 items-center justify-between sm:justify-start">
 
-        {/* Custom Status Dropdown */}
+        {/* Meal response dropdown */}
         <div className="relative flex-1 sm:flex-none">
           <button
             onClick={() => setOpen(o => !o)}
@@ -61,14 +61,14 @@ export function GuestToolbar({ filter, loading, onFilterChange, onRefresh }: Pro
             <>
               <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
               <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 min-w-[160px] animate-in fade-in slide-in-from-top-1">
-                <p className="px-3 py-1 text-[10px] font-bold tracking-widest uppercase text-slate-400">Trạng thái</p>
-                {STATUS_OPTIONS.map((opt) => (
+                <p className="px-3 py-1 text-[10px] font-bold tracking-widest uppercase text-slate-400">Phản hồi ăn</p>
+                {MEAL_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
-                    onClick={() => { onFilterChange({ status: opt.value }); setOpen(false) }}
+                    onClick={() => { onFilterChange({ mealStatus: opt.value }); setOpen(false) }}
                     className={clsx(
                       "w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-slate-50 transition-colors",
-                      filter.status === opt.value && 'bg-slate-50'
+                      filter.mealStatus === opt.value && 'bg-slate-50'
                     )}
                   >
                     <span className={clsx(
@@ -78,7 +78,7 @@ export function GuestToolbar({ filter, loading, onFilterChange, onRefresh }: Pro
                       {opt.icon ?? <span className="w-[13px]" />}
                       {opt.label}
                     </span>
-                    {filter.status === opt.value && <span className="ml-auto text-emerald-500">✓</span>}
+                    {filter.mealStatus === opt.value && <span className="ml-auto text-emerald-500">✓</span>}
                   </button>
                 ))}
               </div>
