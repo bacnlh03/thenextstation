@@ -361,7 +361,7 @@ function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen }: {
         if (pointersRef.current.size < 2) pinchStartRef.current = null
     }
 
-    const getTouchDistance = (touches: TouchList) => {
+    const getTouchDistance = (touches: TouchEvent<HTMLDivElement>['touches']) => {
         const first = touches[0]
         const second = touches[1]
         return Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY)
