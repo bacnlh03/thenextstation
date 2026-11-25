@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Send, MessageCircleHeart, Sparkles } from 'lucide-react'
 import clsx from 'clsx'
+import type { InvitationLanguage } from '@/lib/invitationLanguage'
 
 interface Wish {
   id: string
@@ -14,22 +15,24 @@ interface Props {
   guestId: string | null
   guestName: string
   allowWishes?: boolean
+  language?: InvitationLanguage
 }
 
 const MAX_CHARS = 300
 
-function timeAgo(isoDate: string): string {
+function timeAgo(isoDate: string, language: InvitationLanguage): string {
   const diff = Date.now() - new Date(isoDate).getTime()
   const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'vừa xong'
-  if (mins < 60) return `${mins} phút trước`
+  if (mins < 1) return language === 'en' ? 'just now' : 'vừa xong'
+  if (mins < 60) return language === 'en' ? `${mins} min ago` : `${mins} phút trước`
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours} giờ trước`
+  if (hours < 24) return language === 'en' ? `${hours} hr ago` : `${hours} giờ trước`
   const days = Math.floor(hours / 24)
-  return `${days} ngày trước`
+  return language === 'en' ? `${days} days ago` : `${days} ngày trước`
 }
 
-export function WishesSection({ guestId, guestName, allowWishes = true }: Props) {
+export function WishesSection({ guestId, guestName, allowWishes = true, language = 'vi' }: Props) {
+  const isEnglish = language === 'en'
   const [wishes, setWishes] = useState<Wish[]>([])
   const [message, setMessage] = useState('')
   const [name, setName] = useState(guestName)
@@ -69,7 +72,7 @@ export function WishesSection({ guestId, guestName, allowWishes = true }: Props)
 
     setSubmitting(false)
     if (rpcErr) {
-      setError('Có lỗi xảy ra, vui lòng thử lại.')
+      setError(isEnglish ? 'Something went wrong. Please try again.' : 'Có lỗi xảy ra, vui lòng thử lại.')
       return
     }
 
@@ -99,13 +102,13 @@ export function WishesSection({ guestId, guestName, allowWishes = true }: Props)
           className="text-2xl font-semibold tracking-wide text-[#fef3c7]"
           style={{ fontFamily: 'Playfair Display, serif' }}
         >
-          Lời Chúc Mừng
+          {isEnglish ? 'Messages of Love' : 'Lời Chúc Mừng'}
         </h2>
         <p
           className="mt-1.5 text-xs tracking-[0.2em] uppercase text-[#94a3b8]"
           style={{ fontFamily: 'Montserrat, sans-serif' }}
         >
-          Gửi đến những lời yêu thương
+          {isEnglish ? 'Share your warmest wishes' : 'Gửi đến những lời yêu thương'}
         </p>
       </div>
 
@@ -118,7 +121,7 @@ export function WishesSection({ guestId, guestName, allowWishes = true }: Props)
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="Tên của bạn"
+                placeholder={isEnglish ? 'Your name' : 'Tên của bạn'}
                 maxLength={60}
                 className={clsx(
                   'w-full bg-white/5 border border-[#fcd34d]/20 rounded-xl px-4 py-3',
@@ -133,7 +136,7 @@ export function WishesSection({ guestId, guestName, allowWishes = true }: Props)
               <textarea
                 value={message}
                 onChange={e => setMessage(e.target.value.slice(0, MAX_CHARS))}
-                placeholder="Viết lời chúc mừng của bạn…"
+                placeholder={isEnglish ? 'Write your wishes…' : 'Viết lời chúc mừng của bạn…'}
                 rows={4}
                 className={clsx(
                   'w-full bg-white/5 border border-[#fcd34d]/20 rounded-xl px-4 py-3 resize-none',
@@ -168,11 +171,11 @@ export function WishesSection({ guestId, guestName, allowWishes = true }: Props)
               )}
             >
               {submitting ? (
-                <span className="animate-pulse">Đang gửi…</span>
+                <span className="animate-pulse">{isEnglish ? 'Sending…' : 'Đang gửi…'}</span>
               ) : (
                 <>
                   <Send size={14} />
-                  Gửi lời chúc
+                  {isEnglish ? 'Send wishes' : 'Gửi lời chúc'}
                 </>
               )}
             </button>
@@ -184,21 +187,21 @@ export function WishesSection({ guestId, guestName, allowWishes = true }: Props)
               className="text-[#fef3c7] text-base text-center"
               style={{ fontFamily: 'Playfair Display, serif' }}
             >
-              Cảm ơn bạn đã gửi lời chúc! 🎓
+              {isEnglish ? 'Thank you for your kind wishes! 🎓' : 'Cảm ơn bạn đã gửi lời chúc! 🎓'}
             </p>
             <button
               type="button"
               onClick={() => setSubmitted(false)}
               className="text-[10px] tracking-widest uppercase text-[#64748b] hover:text-[#94a3b8] transition-colors"
             >
-              Gửi thêm lời chúc
+              {isEnglish ? 'Send another wish' : 'Gửi thêm lời chúc'}
             </button>
           </div>
         )
       ) : (
         <div className="mb-10 py-6 px-4 rounded-xl border border-[#fcd34d]/10 bg-white/[0.02] text-center">
           <p className="text-xs text-[#94a3b8]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-            Tính năng gửi lời chúc hiện đang tạm đóng cho thiệp này
+            {isEnglish ? 'Wishes are currently closed for this invitation.' : 'Tính năng gửi lời chúc hiện đang tạm đóng cho thiệp này'}
           </p>
         </div>
       )}
@@ -207,7 +210,7 @@ export function WishesSection({ guestId, guestName, allowWishes = true }: Props)
       {wishes.length > 0 && (
         <div ref={listRef} className="space-y-3">
           {wishes.map((w, i) => (
-            <WishCard key={w.id} wish={w} index={i} />
+          <WishCard key={w.id} wish={w} index={i} language={language} />
           ))}
         </div>
       )}
@@ -215,7 +218,7 @@ export function WishesSection({ guestId, guestName, allowWishes = true }: Props)
   )
 }
 
-function WishCard({ wish, index }: { wish: Wish; index: number }) {
+function WishCard({ wish, index, language }: { wish: Wish; index: number; language: InvitationLanguage }) {
   const ref = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
 
@@ -249,7 +252,7 @@ function WishCard({ wish, index }: { wish: Wish; index: number }) {
         >
           {wish.guest_name}
         </span>
-        <span className="text-[10px] text-[#475569]">{timeAgo(wish.created_at)}</span>
+        <span className="text-[10px] text-[#475569]">{timeAgo(wish.created_at, language)}</span>
       </div>
       <p
         className="text-sm text-[#cbd5e1] leading-relaxed"

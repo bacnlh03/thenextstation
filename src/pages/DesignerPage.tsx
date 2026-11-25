@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDesignStore, normalizeUrl } from '@/stores/useDesignStore'
 import type { DesignElement, MomentPhoto, PhotoFrameStyle } from '@/types/design'
+import type { InvitationLanguage } from '@/lib/invitationLanguage'
+import { getElementContent } from '@/lib/invitationLanguage'
 import { normalizeMomentPhoto } from '@/types/design'
 import { 
   Type, Save, GraduationCap, AlignHorizontalJustifyCenter, AlignVerticalJustifyCenter, 
@@ -60,6 +62,7 @@ export function DesignerPage() {
   const [showPreview, setShowPreview] = useState(false)
   const [musicDuration, setMusicDuration] = useState(0)
   const [activeTab, setActiveTab] = useState<'design' | 'music' | 'photos' | 'meal'>('design')
+  const [canvasLanguage, setCanvasLanguage] = useState<InvitationLanguage>('en')
   const [isPlaying, setIsPlaying] = useState(false)
   const [photoUploading, setPhotoUploading] = useState(false)
   const [optimizingPhotos, setOptimizingPhotos] = useState(false)
@@ -792,8 +795,10 @@ export function DesignerPage() {
                                             <div className="space-y-4">
                                                 {el.type !== 'dynamic' && (
                                                     <div>
-                                                        <label className="block text-[10px] text-slate-400 font-bold uppercase mb-1">Nội dung</label>
+                                                        <label className="block text-[10px] text-slate-400 font-bold uppercase mb-1">Nội dung English</label>
                                                         <textarea className="w-full border border-slate-200 rounded-lg p-2.5 text-sm min-h-[80px] focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all" value={el.content || ''} onChange={(e) => updateElement(el.id, { content: e.target.value })} />
+                                                        <label className="block text-[10px] text-slate-400 font-bold uppercase mb-1 mt-3">Nội dung tiếng Việt</label>
+                                                        <textarea className="w-full border border-slate-200 rounded-lg p-2.5 text-sm min-h-[80px] focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all" value={el.contentVi || ''} onChange={(e) => updateElement(el.id, { contentVi: e.target.value || undefined })} placeholder="Nhập nội dung tiếng Việt riêng..." />
                                                     </div>
                                                 )}
                                                 {el.type === 'text' && (
@@ -877,10 +882,14 @@ export function DesignerPage() {
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Mời đi ăn</p>
                         <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-500">Nội dung bên dưới sẽ hiển thị cho những khách được bật “Ăn” trong trang Khách mời.</p>
                     </div>
-                    <label className="block text-xs font-semibold text-slate-600">Tiêu đề<input value={config.mealInvite?.title ?? ''} onChange={(e) => updateMealInvite({ title: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="Mời đi ăn cùng nhau" /></label>
-                    <label className="block text-xs font-semibold text-slate-600">Nội dung<textarea value={config.mealInvite?.content ?? ''} onChange={(e) => updateMealInvite({ content: e.target.value })} rows={5} className="mt-1 w-full resize-none rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="Nội dung lời mời..." /></label>
-                    <label className="block text-xs font-semibold text-slate-600">Địa chỉ<input value={config.mealInvite?.address ?? ''} onChange={(e) => updateMealInvite({ address: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="Nhà hàng / địa chỉ" /></label>
-                    <label className="block text-xs font-semibold text-slate-600">Ghi chú<textarea value={config.mealInvite?.note ?? ''} onChange={(e) => updateMealInvite({ note: e.target.value })} rows={3} className="mt-1 w-full resize-none rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="Ví dụ: Có mặt trước 18:30..." /></label>
+                    <label className="block text-xs font-semibold text-slate-600">Tiêu đề English<input value={config.mealInvite?.title ?? ''} onChange={(e) => updateMealInvite({ title: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="English title" /></label>
+                    <label className="block text-xs font-semibold text-slate-600">Tiêu đề tiếng Việt<input value={config.mealInvite?.titleVi ?? ''} onChange={(e) => updateMealInvite({ titleVi: e.target.value || undefined })} className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="Tiêu đề tiếng Việt" /></label>
+                    <label className="block text-xs font-semibold text-slate-600">Nội dung English<textarea value={config.mealInvite?.content ?? ''} onChange={(e) => updateMealInvite({ content: e.target.value })} rows={5} className="mt-1 w-full resize-none rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="English invitation content" /></label>
+                    <label className="block text-xs font-semibold text-slate-600">Nội dung tiếng Việt<textarea value={config.mealInvite?.contentVi ?? ''} onChange={(e) => updateMealInvite({ contentVi: e.target.value || undefined })} rows={5} className="mt-1 w-full resize-none rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="Nội dung lời mời tiếng Việt" /></label>
+                    <label className="block text-xs font-semibold text-slate-600">Địa chỉ English<input value={config.mealInvite?.address ?? ''} onChange={(e) => updateMealInvite({ address: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="Restaurant / address" /></label>
+                    <label className="block text-xs font-semibold text-slate-600">Địa chỉ tiếng Việt<input value={config.mealInvite?.addressVi ?? ''} onChange={(e) => updateMealInvite({ addressVi: e.target.value || undefined })} className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="Nhà hàng / địa chỉ" /></label>
+                    <label className="block text-xs font-semibold text-slate-600">Ghi chú English<textarea value={config.mealInvite?.note ?? ''} onChange={(e) => updateMealInvite({ note: e.target.value })} rows={3} className="mt-1 w-full resize-none rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="English note" /></label>
+                    <label className="block text-xs font-semibold text-slate-600">Ghi chú tiếng Việt<textarea value={config.mealInvite?.noteVi ?? ''} onChange={(e) => updateMealInvite({ noteVi: e.target.value || undefined })} rows={3} className="mt-1 w-full resize-none rounded-lg border border-slate-200 p-2.5 text-sm" placeholder="Ví dụ: Có mặt trước 18:30..." /></label>
                     <div className="grid grid-cols-2 gap-2">
                         <label className="block text-xs font-semibold text-slate-600">Latitude<input value={config.mealInvite?.lat ?? ''} onChange={(e) => updateMealInvite({ lat: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-sm" inputMode="decimal" /></label>
                         <label className="block text-xs font-semibold text-slate-600">Longitude<input value={config.mealInvite?.lng ?? ''} onChange={(e) => updateMealInvite({ lng: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-sm" inputMode="decimal" /></label>
@@ -1440,11 +1449,28 @@ export function DesignerPage() {
           <PhotoCollageCanvas />
         ) : (
           /* Main Card Canvas */
-          <div 
+          <div className="flex flex-col items-center gap-3 my-auto">
+            <div className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+              <span className="px-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">Canvas</span>
+              {(['en', 'vi'] as const).map((lang) => (
+                <button
+                  key={lang}
+                  type="button"
+                  onClick={() => setCanvasLanguage(lang)}
+                  className={clsx(
+                    'rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors',
+                    canvasLanguage === lang ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-100'
+                  )}
+                >
+                  {lang.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <div
              ref={canvasRef}
-             className="relative shadow-2xl ring-1 ring-slate-900/5 my-auto"
+             className="relative shadow-2xl ring-1 ring-slate-900/5"
              style={{ width: config.width, height: config.height }}
-          >
+            >
               <div 
                  className="w-full h-full relative overflow-hidden bg-white"
                  style={{
@@ -1515,14 +1541,14 @@ export function DesignerPage() {
                                  <MapPin size={13} className="shrink-0 text-[#fcd34d]/70" />
                              </span>
                          )}
-                         {el.type === 'dynamic' && el.field === 'full_name' ? '{Tên Khách Mời}' : (
+                         {el.type === 'dynamic' && el.field === 'full_name' ? (canvasLanguage === 'en' ? '{Guest Name}' : '{Tên Khách Mời}') : (
                              el.type === 'image' ? (
                                  normalizeUrl(el.content) ? (
                                      <img src={normalizeUrl(el.content)} className="w-full h-full object-cover pointer-events-none rounded-[1px]" />
                                  ) : (
                                      <div className="w-full h-full flex items-center justify-center bg-slate-100 text-[10px] text-slate-400">No Image</div>
                                  )
-                             ) : el.content
+                             ) : getElementContent(el, canvasLanguage)
                          )}
 
                          {/* Resize Handles when element is selected */}
@@ -1549,6 +1575,7 @@ export function DesignerPage() {
                      </div>
                   ))}
               </div>
+            </div>
           </div>
         )}
          

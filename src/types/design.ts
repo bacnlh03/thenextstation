@@ -7,6 +7,8 @@ export interface DesignElement {
   type: ElementType
   // Content for static text, or image URL
   content?: string
+  /** Vietnamese copy; content remains the existing English copy. */
+  contentVi?: string
   // For dynamic fields (e.g., 'full_name')
   field?: string
   // Position
@@ -110,6 +112,10 @@ export interface DesignConfig {
     content: string
     address: string
     note?: string
+    titleVi?: string
+    contentVi?: string
+    addressVi?: string
+    noteVi?: string
     lat?: number | string
     lng?: number | string
   }
@@ -128,8 +134,10 @@ export const DEFAULT_CONFIG: DesignConfig = {
     enabled: false
   },
   mealInvite: {
-    title: 'Mời đi ăn cùng nhau',
-    content: 'Sau buổi lễ, mình thân mời bạn cùng dùng bữa và chia sẻ thêm những khoảnh khắc vui nhé!',
+    title: 'Join me for a meal',
+    content: 'After the ceremony, I would love for you to join me for a meal and share a few more happy moments together!',
+    titleVi: 'Mời đi ăn cùng nhau',
+    contentVi: 'Sau buổi lễ, mình thân mời bạn cùng dùng bữa và chia sẻ thêm những khoảnh khắc vui nhé!',
     address: '',
     note: '',
     lat: '',
@@ -157,7 +165,8 @@ export const DEFAULT_CONFIG: DesignConfig = {
     {
       id: 'title',
       type: 'text',
-      content: 'Lễ Tốt Nghiệp',
+      content: 'Graduation Celebration',
+      contentVi: 'Lễ Tốt Nghiệp',
       x: 50,
       y: 90,
       style: { 
@@ -174,7 +183,8 @@ export const DEFAULT_CONFIG: DesignConfig = {
     {
       id: 'guest_label',
       type: 'text',
-      content: 'Trân trọng kính mời',
+      content: 'You are cordially invited',
+      contentVi: 'Trân trọng kính mời',
       x: 50,
       y: 140,
       style: {
@@ -237,7 +247,8 @@ export const DEFAULT_CONFIG: DesignConfig = {
     {
       id: 'message',
       type: 'text',
-      content: 'Cùng chia sẻ khoảnh khắc đẹp nhất dưới bầu trời đêm đầy sao.',
+      content: 'Let us share one of the most beautiful moments beneath the starry night sky.',
+      contentVi: 'Cùng chia sẻ khoảnh khắc đẹp nhất dưới bầu trời đêm đầy sao.',
       x: 40,
       y: 350,
       style: {
@@ -253,7 +264,8 @@ export const DEFAULT_CONFIG: DesignConfig = {
     {
         id: 'details_block',
         type: 'text',
-        content: '16:00 • 28.11.2026\nHội trường Trần Chí Đáo',
+        content: '4:00 PM • 28.11.2026\nTran Chi Dao Hall',
+        contentVi: '16:00 • 28.11.2026\nHội trường Trần Chí Đáo',
         mapLat: 10.8688938,
         mapLng: 106.795767,
         x: 50,
@@ -275,7 +287,8 @@ export const DEFAULT_CONFIG: DesignConfig = {
     {
         id: 'confirm_btn',
         type: 'button',
-        content: 'Xác nhận',
+        content: 'Confirm attendance',
+        contentVi: 'Xác nhận',
         x: 100,
         y: 530,
         width: 200,

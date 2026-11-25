@@ -8,12 +8,15 @@ import {
   getOpenMapUrl,
   type MapLocation,
 } from '@/lib/map'
+import type { InvitationLanguage } from '@/lib/invitationLanguage'
 
 interface Props extends Pick<MapLocation, 'lat' | 'lng' | 'query' | 'label'> {
   onClose: () => void
+  language?: InvitationLanguage
 }
 
-export function MapModal({ lat, lng, query, label, onClose }: Props) {
+export function MapModal({ lat, lng, query, label, onClose, language = 'vi' }: Props) {
+  const isEnglish = language === 'en'
   const location = { lat, lng, query, label: label || '' }
   const [isVisible, setIsVisible] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -60,7 +63,7 @@ export function MapModal({ lat, lng, query, label, onClose }: Props) {
         <button
           onClick={onClose}
           className="absolute top-5 right-5 z-20 p-2.5 rounded-full text-[#fcd34d]/70 hover:text-[#fef3c7] hover:bg-[#fcd34d]/10 transition-all"
-          aria-label="Đóng"
+          aria-label={isEnglish ? 'Close' : 'Đóng'}
         >
           <X size={20} />
         </button>
@@ -69,7 +72,7 @@ export function MapModal({ lat, lng, query, label, onClose }: Props) {
           <div className="mb-6 pr-10">
             <div className="flex items-center gap-2 text-[#fcd34d] mb-2">
               <MapPin size={16} />
-              <span className="text-[11px] font-semibold tracking-[0.22em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>Địa điểm</span>
+              <span className="text-[11px] font-semibold tracking-[0.22em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>{isEnglish ? 'Location' : 'Địa điểm'}</span>
             </div>
             <h3 className="text-xl sm:text-2xl text-[#fef3c7] leading-normal" style={{ fontFamily: "'Playfair Display', serif" }}>
               {title}
@@ -78,7 +81,7 @@ export function MapModal({ lat, lng, query, label, onClose }: Props) {
 
           <div className="relative rounded-2xl overflow-hidden border border-[#fcd34d]/20 bg-[#0c0a1d]">
             <iframe
-              title="Bản đồ địa điểm"
+              title={isEnglish ? 'Location map' : 'Bản đồ địa điểm'}
               src={getMapEmbedUrl(location)}
               className="w-full h-[250px] sm:h-[300px] border-0"
               loading="lazy"
@@ -96,7 +99,7 @@ export function MapModal({ lat, lng, query, label, onClose }: Props) {
               style={{ fontFamily: "'Montserrat', sans-serif" }}
             >
               <Navigation size={18} />
-              Chỉ đường
+              {isEnglish ? 'Get directions' : 'Chỉ đường'}
             </a>
             <a
               href={getOpenMapUrl(location)}
@@ -106,7 +109,7 @@ export function MapModal({ lat, lng, query, label, onClose }: Props) {
               style={{ fontFamily: "'Montserrat', sans-serif" }}
             >
               <ExternalLink size={18} />
-              Google Maps
+              {isEnglish ? 'Google Maps' : 'Google Maps'}
             </a>
           </div>
         </div>

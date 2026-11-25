@@ -3,13 +3,16 @@ import { Camera, X, ZoomIn, ZoomOut, RotateCcw, ChevronLeft, ChevronRight } from
 import clsx from 'clsx'
 import { normalizeMomentPhoto } from '@/types/design'
 import type { PhotoItem } from '@/types/design'
+import type { InvitationLanguage } from '@/lib/invitationLanguage'
 
 interface Props {
   photos: PhotoItem[]
   layout?: 'collage' | 'grid'
+  language?: InvitationLanguage
 }
 
-export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
+export function PhotoGallerySection({ photos, layout = 'collage', language = 'vi' }: Props) {
+  const isEnglish = language === 'en'
   const [activeLightboxIndex, setActiveLightboxIndex] = useState<number | null>(null)
   const [lightboxZoom, setLightboxZoom] = useState(1)
   const [lightboxOffset, setLightboxOffset] = useState({ x: 0, y: 0 })
@@ -130,13 +133,13 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
           className="text-2xl font-semibold tracking-wide text-[#fef3c7]"
           style={{ fontFamily: 'Playfair Display, serif' }}
         >
-          Khoảnh Khắc
+          {isEnglish ? 'Memories' : 'Khoảnh Khắc'}
         </h2>
         <p
           className="mt-1.5 text-xs tracking-[0.2em] uppercase text-[#94a3b8]"
           style={{ fontFamily: 'Montserrat, sans-serif' }}
         >
-          Những kỷ niệm đẹp trên hành trình
+          {isEnglish ? 'Beautiful memories from the journey' : 'Những kỷ niệm đẹp trên hành trình'}
         </p>
       </div>
 
@@ -195,7 +198,7 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
           <button
             onClick={closeLightbox}
             className="absolute top-5 right-5 p-2.5 bg-white/20 hover:bg-white/30 text-white rounded-full transition-colors z-10"
-            title="Đóng"
+            title={isEnglish ? 'Close' : 'Đóng'}
           >
             <X size={20} />
           </button>
@@ -203,7 +206,7 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
             <>
               <button
                 type="button"
-                aria-label="Ảnh trước"
+                aria-label={isEnglish ? 'Previous photo' : 'Ảnh trước'}
                 onClick={event => { event.stopPropagation(); changeLightboxPhoto(-1) }}
                 className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/20 p-2.5 text-white backdrop-blur-sm transition hover:bg-white/30"
               >
@@ -211,7 +214,7 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
               </button>
               <button
                 type="button"
-                aria-label="Ảnh tiếp theo"
+                aria-label={isEnglish ? 'Next photo' : 'Ảnh tiếp theo'}
                 onClick={event => { event.stopPropagation(); changeLightboxPhoto(1) }}
                 className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/20 p-2.5 text-white backdrop-blur-sm transition hover:bg-white/30"
               >
@@ -228,7 +231,7 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
               onClick={event => { event.stopPropagation(); changeLightboxZoom(-0.25) }}
               className="rounded-full p-2 hover:bg-white/20 disabled:opacity-40"
               disabled={lightboxZoom <= 1}
-              title="Thu nhỏ"
+              title={isEnglish ? 'Zoom out' : 'Thu nhỏ'}
             >
               <ZoomOut size={18} />
             </button>
@@ -237,7 +240,7 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
               onClick={event => { event.stopPropagation(); changeLightboxZoom(0.25) }}
               className="rounded-full p-2 hover:bg-white/20 disabled:opacity-40"
               disabled={lightboxZoom >= 4}
-              title="Phóng to"
+              title={isEnglish ? 'Zoom in' : 'Phóng to'}
             >
               <ZoomIn size={18} />
             </button>
@@ -250,7 +253,7 @@ export function PhotoGallerySection({ photos, layout = 'collage' }: Props) {
               }}
               className="rounded-full p-2 hover:bg-white/20 disabled:opacity-40"
               disabled={lightboxZoom === 1 && lightboxOffset.x === 0 && lightboxOffset.y === 0}
-              title="Đặt lại zoom"
+              title={isEnglish ? 'Reset zoom' : 'Đặt lại zoom'}
             >
               <RotateCcw size={18} />
             </button>

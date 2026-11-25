@@ -11,11 +11,13 @@ import { useSearchParams, useParams } from 'react-router-dom'
 import clsx from 'clsx'
 import type { DesignConfig } from '@/types/design'
 import type { Guest } from '@/types'
+import type { InvitationLanguage } from '@/lib/invitationLanguage'
 
 export function InvitationPage() {
   const [searchParams] = useSearchParams()
   const { slug } = useParams<{ slug?: string }>()
   const guestIdentifier = slug || searchParams.get('id') || searchParams.get('to')
+  const [language, setLanguage] = useState<InvitationLanguage>(searchParams.get('lang') === 'en' ? 'en' : 'vi')
   
   const getGuestById = useGuestStore(state => state.getGuestById)
   const confirmAttendance = useGuestStore(state => state.confirmAttendance)
@@ -139,6 +141,7 @@ export function InvitationPage() {
   const hasPhotos = Boolean(config.photos && config.photos.length > 0)
   const hasMealInvite = Boolean(config.mealInvite && allowMealInvite)
   const hasSectionsBelow = Boolean(allowWishes || hasPhotos || hasMealInvite)
+  const isEnglish = language === 'en'
 
   return (
     <div 
@@ -214,6 +217,7 @@ export function InvitationPage() {
             isConfirmed={isConfirmed === 2}
             onConfirm={handleConfirm}
             onOpen={handleOpen}
+            language={language}
           />
         </div>
 
@@ -231,7 +235,7 @@ export function InvitationPage() {
               className="text-[9px] tracking-[0.35em] uppercase text-[#fcd34d]/70 font-semibold"
               style={{ fontFamily: 'Montserrat, sans-serif' }}
             >
-              Cuộn xuống
+              {isEnglish ? 'Scroll down' : 'Cuộn xuống'}
             </span>
             {/* Triple chevron cascade */}
             <div className="flex flex-col items-center -space-y-2">
@@ -265,7 +269,7 @@ export function InvitationPage() {
               </div>
 
               <section>
-                <WishesSection guestId={guestId} guestName={guestName} />
+                <WishesSection guestId={guestId} guestName={guestName} language={language} />
               </section>
             </>
           )}
@@ -281,7 +285,7 @@ export function InvitationPage() {
               </div>
 
               <section>
-                <PhotoGallerySection photos={config.photos!} layout={config.photoLayout} />
+                <PhotoGallerySection photos={config.photos!} layout={config.photoLayout} language={language} />
               </section>
             </>
           )}
@@ -293,7 +297,7 @@ export function InvitationPage() {
                 <span className="text-[#fcd34d]/30 text-xs">✦</span>
                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#fcd34d]/20 to-transparent" />
               </div>
-              <section><MealInviteSection invite={config.mealInvite!} mealStatus={mealStatus} onRespond={async (nextStatus) => {
+              <section><MealInviteSection invite={config.mealInvite!} mealStatus={mealStatus} language={language} onRespond={async (nextStatus) => {
                 if (!guestId) return false
                 const success = await respondMeal(guestId, nextStatus)
                 if (success) setMealStatus(nextStatus)
@@ -309,7 +313,7 @@ export function InvitationPage() {
         <button
           type="button"
           onClick={toggleMusic}
-          aria-label={isPlaying ? 'Tắt nhạc' : 'Bật nhạc'}
+          aria-label={isPlaying ? (isEnglish ? 'Turn music off' : 'Tắt nhạc') : (isEnglish ? 'Turn music on' : 'Bật nhạc')}
           className="fixed bottom-5 right-5 z-50 h-11 w-11 rounded-full border border-[#fcd34d]/40 bg-[#14122c]/80 text-[#fcd34d] backdrop-blur-md flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.35)] hover:bg-[#fcd34d]/15 transition-colors"
         >
           {isPlaying ? <Volume2 size={18} /> : <VolumeX size={18} />}
@@ -319,12 +323,13 @@ export function InvitationPage() {
   )
 }
 
-function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen }: { 
+function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen, language }: {
     config: DesignConfig, 
     guest: Guest, 
     isConfirmed: boolean, 
     onConfirm: () => void,
-    onOpen: () => void
+    onOpen: () => void,
+    language: InvitationLanguage
 }) {
     const containerRef = useRef<HTMLDivElement>(null)
     const [scale, setScale] = useState(1)
@@ -453,9 +458,10 @@ function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen }: {
                       guest={guest} 
                       isConfirmed={isConfirmed}
                       onConfirm={onConfirm}
+                      language={language}
                       scale={scale}
                   />
-                  <BookCoverReveal scale={scale} onOpen={onOpen} />
+                  <BookCoverReveal scale={scale} onOpen={onOpen} language={language} />
                 </div>
              </div>
         </div>
@@ -474,7 +480,7 @@ function CornerMarks() {
   )
 }
 
-function BookCoverReveal({ scale, onOpen }: { scale: number, onOpen: () => void }) {
+function BookCoverReveal({ scale, onOpen, language }: { scale: number, onOpen: () => void, language: InvitationLanguage }) {
     const [isOpened, setIsOpened] = useState(false)
     const [isHovered, setIsHovered] = useState(false)
 
@@ -534,7 +540,7 @@ function BookCoverReveal({ scale, onOpen }: { scale: number, onOpen: () => void 
                     "mt-3 font-luxury-sans text-[#fcd34d] text-[10px] tracking-[0.32em] uppercase transition-opacity duration-300",
                     isHovered ? "opacity-100" : "opacity-70"
                 )}>
-                    Mở thiệp
+                    {language === 'en' ? 'Open invitation' : 'Mở thiệp'}
                 </span>
             </div>
         </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pencil, Save, X, Trash2, Loader2, Link2, Check, MessageSquareHeart, MessageSquareOff, Utensils } from 'lucide-react'
+import { Pencil, Save, X, Trash2, Loader2, Check, MessageSquareHeart, MessageSquareOff, Utensils } from 'lucide-react'
 import type { Guest } from '@/types'
 import clsx from 'clsx'
 
@@ -15,15 +15,17 @@ interface Props {
 export function GuestTable({ guests, loading, onUpdateName, onDelete, onToggleAllowWishes, onToggleAllowMealInvite }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editNameModel, setEditNameModel] = useState('')
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [copiedKey, setCopiedKey] = useState<string | null>(null)
 
-  const copyUrl = (guest: Guest) => {
-    const url = guest.slug 
+  const copyUrl = (guest: Guest, language: 'vi' | 'en') => {
+    const baseUrl = guest.slug
       ? `${window.location.origin}/to/${guest.slug}`
       : `${window.location.origin}/invitation?id=${guest.id}`
+    const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}lang=${language}`
     navigator.clipboard.writeText(url)
-    setCopiedId(guest.id)
-    setTimeout(() => setCopiedId(null), 2000)
+    const key = `${guest.id}-${language}`
+    setCopiedKey(key)
+    setTimeout(() => setCopiedKey(null), 2000)
   }
 
   const startEdit = (guest: Guest) => {
@@ -104,13 +106,19 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onToggleAl
 
               {/* Action buttons (always visible on mobile) */}
               <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => copyUrl(guest)}
-                  title="Copy link mời"
-                  className="p-2 text-slate-500 hover:text-indigo-600 active:bg-indigo-50 rounded-lg transition-colors border border-slate-200 bg-white"
-                >
-                  {copiedId === guest.id ? <Check size={16} className="text-emerald-500" /> : <Link2 size={16} />}
-                </button>
+                {(['vi', 'en'] as const).map((language) => {
+                  const key = `${guest.id}-${language}`
+                  return (
+                    <button
+                      key={language}
+                      onClick={() => copyUrl(guest, language)}
+                      title={`Copy link ${language === 'vi' ? 'tiếng Việt' : 'English'}`}
+                      className="min-w-8 p-2 text-[11px] font-bold text-slate-500 hover:text-indigo-600 active:bg-indigo-50 rounded-lg transition-colors border border-slate-200 bg-white"
+                    >
+                      {copiedKey === key ? <Check size={16} className="text-emerald-500" /> : language.toUpperCase()}
+                    </button>
+                  )
+                })}
                 <button 
                   onClick={() => startEdit(guest)} 
                   className="p-2 text-slate-500 hover:text-emerald-600 active:bg-emerald-50 rounded-lg border border-slate-200 bg-white"
@@ -278,13 +286,19 @@ export function GuestTable({ guests, loading, onUpdateName, onDelete, onToggleAl
                   </div>
                 ) : (
                   <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => copyUrl(guest)}
-                      title="Copy link mời"
-                      className="p-2 text-slate-400 hover:text-indigo-600 rounded transition-colors"
-                    >
-                      {copiedId === guest.id ? <Check size={16} className="text-emerald-500" /> : <Link2 size={16} />}
-                    </button>
+                    {(['vi', 'en'] as const).map((language) => {
+                      const key = `${guest.id}-${language}`
+                      return (
+                        <button
+                          key={language}
+                          onClick={() => copyUrl(guest, language)}
+                          title={`Copy link ${language === 'vi' ? 'tiếng Việt' : 'English'}`}
+                          className="px-1.5 py-1 text-[10px] font-bold text-slate-400 hover:text-indigo-600 rounded transition-colors"
+                        >
+                          {copiedKey === key ? <Check size={16} className="text-emerald-500" /> : language.toUpperCase()}
+                        </button>
+                      )
+                    })}
                     <button onClick={() => startEdit(guest)} className="p-2 text-slate-400 hover:text-emerald-600 rounded"><Pencil size={16}/></button>
                     <button onClick={() => onDelete(guest.id)} className="p-2 text-slate-400 hover:text-red-600 rounded"><Trash2 size={16}/></button>
                   </div>

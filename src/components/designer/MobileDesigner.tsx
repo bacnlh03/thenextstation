@@ -270,6 +270,7 @@ export function MobileDesigner({
               config={config} 
               onElementClick={(id) => selectElement(id)}
               selectedId={selectedElementId}
+              language="en"
             />
           </div>
         </div>

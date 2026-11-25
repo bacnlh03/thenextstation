@@ -6,6 +6,8 @@ import { MapModal } from '@/components/ui/MapModal'
 import { getElementMapLocation, hasMapLocation, type MapLocation } from '@/lib/map'
 import { MapPin } from 'lucide-react'
 import clsx from 'clsx'
+import type { InvitationLanguage } from '@/lib/invitationLanguage'
+import { getElementContent } from '@/lib/invitationLanguage'
 
 interface Props {
   config: DesignConfig
@@ -17,19 +19,22 @@ interface Props {
   scale?: number
   isConfirmed?: boolean
   onConfirm?: () => void
+  language?: InvitationLanguage
 }
 
 interface MapTarget extends Pick<MapLocation, 'lat' | 'lng' | 'query' | 'label'> {}
 
 // Helper to render dynamic content
-const renderContent = (el: DesignElement, guest?: Guest | null, isConfirmed?: boolean) => {
+const renderContent = (el: DesignElement, guest?: Guest | null, isConfirmed?: boolean, language: InvitationLanguage = 'vi') => {
   if (el.type === 'dynamic' && el.field === 'full_name') {
-    return guest?.full_name || 'Tên Khách Mời'
+    return guest?.full_name || (language === 'en' ? 'Guest Name' : 'Tên Khách Mời')
   }
   if (el.type === 'button') {
-     return isConfirmed ? 'Đã xác nhận' : (el.content || 'Xác nhận tham dự')
+     return isConfirmed
+       ? (language === 'en' ? 'Attendance confirmed' : 'Đã xác nhận')
+       : (getElementContent(el, language) || (language === 'en' ? 'Confirm attendance' : 'Xác nhận tham dự'))
   }
-  return el.content
+  return getElementContent(el, language)
 }
 
 function AddressLine({
@@ -80,13 +85,15 @@ function TextElementContent({
   guest,
   isEditor,
   onOpenMap,
+  language,
 }: {
   el: DesignElement
   guest?: Guest | null
   isEditor: boolean
   onOpenMap: (target: MapTarget) => void
+  language: InvitationLanguage
 }) {
-  const content = renderContent(el, guest)
+  const content = renderContent(el, guest, undefined, language)
   const mapLocation = getElementMapLocation(el)
   const canOpenMap = hasMapLocation(el)
 
@@ -129,7 +136,7 @@ function TextElementContent({
   )
 }
 
-export function InvitationRenderer({ config, guest, onElementClick, selectedId, scale = 1, isConfirmed, onConfirm }: Props) {
+export function InvitationRenderer({ config, guest, onElementClick, selectedId, scale = 1, isConfirmed, onConfirm, language = 'vi' }: Props) {
   const [mapTarget, setMapTarget] = useState<MapTarget | null>(null)
   const isEditor = Boolean(onElementClick)
 
@@ -178,7 +185,7 @@ export function InvitationRenderer({ config, guest, onElementClick, selectedId, 
                           transform: `rotate(${el.rotation || 0}deg)`
                       }}
                   >
-                      {renderContent(el, guest, isConfirmed)}
+                      {renderContent(el, guest, isConfirmed, language)}
                   </button>
               )
           }
@@ -250,6 +257,7 @@ export function InvitationRenderer({ config, guest, onElementClick, selectedId, 
                     guest={guest}
                     isEditor={isEditor}
                     onOpenMap={setMapTarget}
+                    language={language}
                   />
               </div>
           )
@@ -263,6 +271,7 @@ export function InvitationRenderer({ config, guest, onElementClick, selectedId, 
           query={mapTarget.query}
           label={mapTarget.label}
           onClose={() => setMapTarget(null)}
+          language={language}
         />
       )}
     </>
