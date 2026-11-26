@@ -237,7 +237,7 @@ function WishCard({ wish, index, language }: { wish: Wish; index: number; langua
     <div
       ref={ref}
       className={clsx(
-        'relative rounded-2xl border border-[#fcd34d]/12 bg-white/[0.04] backdrop-blur-sm px-5 py-4 transition-all duration-700',
+        'relative rounded-2xl border border-[#fcd34d]/12 bg-white/[0.04] md:backdrop-blur-sm px-5 py-4 transition-all duration-700',
         visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
       )}
       style={{ transitionDelay: `${Math.min(index * 60, 400)}ms` }}

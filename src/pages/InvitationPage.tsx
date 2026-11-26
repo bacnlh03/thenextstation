@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, type PointerEvent, type ReactNode, type TouchEvent } from 'react'
+import { useEffect, useState, useRef, type ReactNode } from 'react'
 import confetti from 'canvas-confetti'
 import { Volume2, VolumeX, ChevronDown } from 'lucide-react'
 import { useGuestStore } from '@/stores/useGuestStore'
@@ -195,7 +195,7 @@ export function InvitationPage() {
 
       {/* Fixed background decorations */}
       <div className="night-stars fixed inset-0 pointer-events-none" />
-      <div className="fixed top-[-18%] left-1/2 -translate-x-1/2 w-[70vw] h-[40vw] bg-[#fcd34d]/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="fixed top-[-18%] left-1/2 -translate-x-1/2 w-[70vw] h-[40vw] rounded-full bg-[radial-gradient(ellipse,rgba(252,211,77,0.1),transparent_70%)] md:bg-none md:bg-[#fcd34d]/10 md:blur-[120px] pointer-events-none" />
       <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(6,5,16,0.72)_100%)]" />
 
       {/* ── SECTION 1: Invitation card (full viewport height, centered) ── */}
@@ -331,12 +331,7 @@ function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen, lang
     onOpen: () => void,
     language: InvitationLanguage
 }) {
-    const containerRef = useRef<HTMLDivElement>(null)
     const [scale, setScale] = useState(1)
-    const [zoom, setZoom] = useState(1)
-    const pointersRef = useRef(new Map<number, { x: number; y: number }>())
-    const pinchStartRef = useRef<{ distance: number; zoom: number } | null>(null)
-    const touchPinchStartRef = useRef<{ distance: number; zoom: number } | null>(null)
 
     useEffect(() => {
         const updateScale = () => {
@@ -363,77 +358,9 @@ function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen, lang
     const width = config.width * scale
     const height = config.height * scale
 
-    const clampZoom = (value: number) => Math.min(3, Math.max(1, value))
-
-    const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-        pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
-        if (pointersRef.current.size === 2) {
-            const [first, second] = Array.from(pointersRef.current.values())
-            pinchStartRef.current = {
-                distance: Math.hypot(second.x - first.x, second.y - first.y),
-                zoom,
-            }
-        }
-    }
-
-    const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-        if (!pointersRef.current.has(event.pointerId)) return
-        pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
-        if (pointersRef.current.size !== 2 || !pinchStartRef.current) return
-
-        const [first, second] = Array.from(pointersRef.current.values())
-        const distance = Math.hypot(second.x - first.x, second.y - first.y)
-        if (pinchStartRef.current.distance > 0) {
-            setZoom(clampZoom(pinchStartRef.current.zoom * distance / pinchStartRef.current.distance))
-        }
-    }
-
-    const handlePointerEnd = (event: PointerEvent<HTMLDivElement>) => {
-        pointersRef.current.delete(event.pointerId)
-        if (pointersRef.current.size < 2) pinchStartRef.current = null
-    }
-
-    const getTouchDistance = (touches: TouchEvent<HTMLDivElement>['touches']) => {
-        const first = touches[0]
-        const second = touches[1]
-        return Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY)
-    }
-
-    const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
-        if (event.touches.length !== 2) return
-        touchPinchStartRef.current = {
-            distance: getTouchDistance(event.touches),
-            zoom,
-        }
-    }
-
-    const handleTouchMove = (event: TouchEvent<HTMLDivElement>) => {
-        const pinch = touchPinchStartRef.current
-        if (!pinch || event.touches.length !== 2) return
-        event.preventDefault()
-        const distance = getTouchDistance(event.touches)
-        if (pinch.distance > 0) {
-            setZoom(clampZoom(pinch.zoom * distance / pinch.distance))
-        }
-    }
-
-    const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
-        if (event.touches.length < 2) touchPinchStartRef.current = null
-    }
-
     return (
         <div
-          ref={containerRef}
           className="relative flex justify-center items-center"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerEnd}
-          onPointerCancel={handlePointerEnd}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onTouchCancel={handleTouchEnd}
-          style={{ touchAction: 'none' }}
         >
              <div
                 className="relative p-px"
@@ -442,9 +369,6 @@ function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen, lang
                   height: height + 18,
                   background: 'linear-gradient(160deg, rgba(253,230,138,0.95), rgba(180,83,9,0.55) 38%, rgba(252,211,77,0.9) 68%, rgba(120,53,15,0.7))',
                   boxShadow: '0 28px 70px rgba(0,0,0,0.48), 0 0 48px rgba(252,211,77,0.14)',
-                  transform: `scale(${zoom})`,
-                  transformOrigin: 'center center',
-                  transition: pinchStartRef.current ? 'none' : 'transform 160ms ease-out',
                 }}
              >
                 <div className="absolute inset-[7px] border border-[#fcd34d]/25 pointer-events-none z-30" />
