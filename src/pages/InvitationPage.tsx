@@ -199,7 +199,7 @@ export function InvitationPage() {
       <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(6,5,16,0.72)_100%)]" />
 
       {/* ── SECTION 1: Invitation card (full viewport height, centered) ── */}
-      <section className="relative min-h-[100dvh] flex flex-col items-center justify-center px-4 pt-4 pb-16 md:py-8">
+      <section className="relative min-h-screen flex flex-col items-center justify-center px-4 pt-4 pb-16 md:py-8" style={{ minHeight: '100svh' }}>
         <div 
           className={clsx(
             "relative z-10 flex flex-col items-center -translate-y-2 md:translate-y-0",
@@ -334,24 +334,44 @@ function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen, lang
     const [scale, setScale] = useState(1)
 
     useEffect(() => {
+        let lastWidth = window.innerWidth
+        let resizeTimeout: number | undefined
+
         const updateScale = () => {
+            lastWidth = window.innerWidth
             const frame = 28
-            const isMobile = window.innerWidth < 768
+            const isMobile = lastWidth < 768
             const horizontalMargin = isMobile ? 24 : 32
             const verticalMargin = isMobile ? 150 : 120
-            const viewportWidth = window.innerWidth - horizontalMargin - frame
+            const viewportWidth = lastWidth - horizontalMargin - frame
             const viewportHeight = window.innerHeight - verticalMargin - frame
             const scaleX = viewportWidth / config.width
             const scaleY = viewportHeight / config.height
             const targetScale = Math.min(scaleX, scaleY, 1)
             setScale(targetScale > 0 ? targetScale : 1)
         }
+        const handleResize = () => {
+            const isTouchDevice = window.matchMedia('(pointer: coarse)').matches
+            if (window.innerWidth >= 768 && !isTouchDevice) {
+                window.clearTimeout(resizeTimeout)
+                resizeTimeout = undefined
+                updateScale()
+                return
+            }
+
+            // Mobile browser chrome and the keyboard can change height while scrolling.
+            if (window.innerWidth === lastWidth && resizeTimeout === undefined) return
+            window.clearTimeout(resizeTimeout)
+            resizeTimeout = window.setTimeout(() => {
+                resizeTimeout = undefined
+                updateScale()
+            }, 150)
+        }
         updateScale()
-        window.addEventListener('resize', updateScale)
-        const timeout = setTimeout(updateScale, 100)
+        window.addEventListener('resize', handleResize)
         return () => {
-            window.removeEventListener('resize', updateScale)
-            clearTimeout(timeout)
+            window.removeEventListener('resize', handleResize)
+            window.clearTimeout(resizeTimeout)
         }
     }, [config.width, config.height])
 
