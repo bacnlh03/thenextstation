@@ -33,7 +33,39 @@ export function InvitationPage() {
   const [isVisible, setIsVisible] = useState(false)
   const [isOpened, setIsOpened] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [viewport, setViewport] = useState(() => ({ width: window.innerWidth, height: window.innerHeight }))
   const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  useEffect(() => {
+    let lastWidth = window.innerWidth
+    let resizeTimeout: number | undefined
+
+    const updateViewport = () => {
+      lastWidth = window.innerWidth
+      setViewport({ width: lastWidth, height: window.innerHeight })
+    }
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768 || window.matchMedia('(pointer: coarse)').matches
+      // Mobile browser controls can resize the visible height while the user scrolls.
+      if (isMobile && window.innerWidth === lastWidth && resizeTimeout === undefined) return
+      window.clearTimeout(resizeTimeout)
+      if (isMobile) {
+        resizeTimeout = window.setTimeout(() => {
+          resizeTimeout = undefined
+          updateViewport()
+        }, 150)
+      } else {
+        resizeTimeout = undefined
+        updateViewport()
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      window.clearTimeout(resizeTimeout)
+    }
+  }, [])
   
   useEffect(() => {
     async function init() {
@@ -187,7 +219,7 @@ export function InvitationPage() {
       <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(6,5,16,0.72)_100%)]" />
 
       {/* ── SECTION 1: Invitation card (full viewport height, centered) ── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-4 pt-4 pb-16 md:py-8" style={{ minHeight: '100svh' }}>
+      <section className="relative flex flex-col items-center justify-center px-4 pt-4 pb-16 md:py-8" style={{ minHeight: viewport.height }}>
         <div 
           className={clsx(
             "relative z-10 flex flex-col items-center -translate-y-2 md:translate-y-0",
@@ -206,6 +238,7 @@ export function InvitationPage() {
             onConfirm={handleConfirm}
             onOpen={handleOpen}
             language={language}
+            viewport={viewport}
           />
         </div>
 
@@ -311,57 +344,20 @@ export function InvitationPage() {
   )
 }
 
-function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen, language }: {
+function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen, language, viewport }: {
     config: DesignConfig, 
     guest: Guest, 
     isConfirmed: boolean, 
     onConfirm: () => void,
     onOpen: () => void,
-    language: InvitationLanguage
+    language: InvitationLanguage,
+    viewport: { width: number, height: number }
 }) {
-    const [scale, setScale] = useState(1)
-
-    useEffect(() => {
-        let lastWidth = window.innerWidth
-        let resizeTimeout: number | undefined
-
-        const updateScale = () => {
-            lastWidth = window.innerWidth
-            const frame = 28
-            const isMobile = lastWidth < 768
-            const horizontalMargin = isMobile ? 24 : 32
-            const verticalMargin = isMobile ? 150 : 120
-            const viewportWidth = lastWidth - horizontalMargin - frame
-            const viewportHeight = window.innerHeight - verticalMargin - frame
-            const scaleX = viewportWidth / config.width
-            const scaleY = viewportHeight / config.height
-            const targetScale = Math.min(scaleX, scaleY, 1)
-            setScale(targetScale > 0 ? targetScale : 1)
-        }
-        const handleResize = () => {
-            const isTouchDevice = window.matchMedia('(pointer: coarse)').matches
-            if (window.innerWidth >= 768 && !isTouchDevice) {
-                window.clearTimeout(resizeTimeout)
-                resizeTimeout = undefined
-                updateScale()
-                return
-            }
-
-            // Mobile browser chrome and the keyboard can change height while scrolling.
-            if (window.innerWidth === lastWidth && resizeTimeout === undefined) return
-            window.clearTimeout(resizeTimeout)
-            resizeTimeout = window.setTimeout(() => {
-                resizeTimeout = undefined
-                updateScale()
-            }, 150)
-        }
-        updateScale()
-        window.addEventListener('resize', handleResize)
-        return () => {
-            window.removeEventListener('resize', handleResize)
-            window.clearTimeout(resizeTimeout)
-        }
-    }, [config.width, config.height])
+    const isMobile = viewport.width < 768
+    const availableWidth = viewport.width - (isMobile ? 24 : 32) - 28
+    const availableHeight = viewport.height - (isMobile ? 150 : 120) - 28
+    const targetScale = Math.min(availableWidth / config.width, availableHeight / config.height, 1)
+    const scale = targetScale > 0 ? targetScale : 1
 
     const width = config.width * scale
     const height = config.height * scale
