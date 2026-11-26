@@ -209,8 +209,8 @@ export function WishesSection({ guestId, guestName, allowWishes = true, language
       {/* Wishes list */}
       {wishes.length > 0 && (
         <div ref={listRef} className="space-y-3">
-          {wishes.map((w, i) => (
-          <WishCard key={w.id} wish={w} index={i} language={language} />
+          {wishes.map(w => (
+            <WishCard key={w.id} wish={w} language={language} />
           ))}
         </div>
       )}
@@ -218,29 +218,10 @@ export function WishesSection({ guestId, guestName, allowWishes = true, language
   )
 }
 
-function WishCard({ wish, index, language }: { wish: Wish; index: number; language: InvitationLanguage }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(false)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisible(true) },
-      { threshold: 0.1 }
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
-
+function WishCard({ wish, language }: { wish: Wish; language: InvitationLanguage }) {
   return (
     <div
-      ref={ref}
-      className={clsx(
-        'relative rounded-2xl border border-[#fcd34d]/12 bg-white/[0.04] md:backdrop-blur-sm px-5 py-4 transition-all duration-700',
-        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-      )}
-      style={{ transitionDelay: `${Math.min(index * 60, 400)}ms` }}
+      className="relative rounded-2xl border border-[#fcd34d]/12 bg-white/[0.04] md:backdrop-blur-sm px-5 py-4"
     >
       {/* Subtle glow dot */}
       <span className="absolute top-4 right-4 w-1.5 h-1.5 rounded-full bg-[#fcd34d]/30" />

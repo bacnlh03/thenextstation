@@ -52,10 +52,12 @@ export function PhotoGallerySection({ photos, layout = 'collage', language = 'vi
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Calculate required canvas height for collage
+  // Reserve room for the rotated cards and their shadows before images load.
   const maxY = normalized.reduce((acc, p) => {
-    const approxH = p.height || p.width / (p.aspectRatio || 0.8)
-    return Math.max(acc, p.y + approxH)
+    const cardHeight = Math.max(p.height || 0, p.width / (p.aspectRatio || 0.8) + 40)
+    const angle = p.rotation * Math.PI / 180
+    const rotatedHeight = Math.abs(Math.sin(angle)) * p.width + Math.abs(Math.cos(angle)) * cardHeight
+    return Math.max(acc, p.y + (cardHeight + rotatedHeight) / 2)
   }, 420) + 40
 
   const activeLightboxUrl = activeLightboxIndex === null
@@ -151,6 +153,7 @@ export function PhotoGallerySection({ photos, layout = 'collage', language = 'vi
               key={photo.id || photo.url + i}
               url={photo.url}
               thumbnailUrl={photo.thumbnailUrl}
+              aspectRatio={photo.aspectRatio || 0.8}
               index={i}
               onClick={() => openLightbox(i)}
             />
@@ -160,10 +163,12 @@ export function PhotoGallerySection({ photos, layout = 'collage', language = 'vi
         /* Scrapbook / Collage layout with rotation, overlaps & custom positions */
         <div ref={containerRef} className="w-full flex justify-center overflow-visible">
           <div
-            className="relative max-w-full"
+            className="relative max-w-full overflow-hidden"
             style={{
               width: `${Math.min(designWidth, containerWidth)}px`,
               height: maxY * scale,
+              overflow: 'clip',
+              overflowClipMargin: '24px',
             }}
           >
             <div
@@ -423,11 +428,13 @@ function CollagePhotoCard({
 function PhotoTile({
   url,
   thumbnailUrl,
+  aspectRatio,
   index,
   onClick,
 }: {
   url: string
   thumbnailUrl?: string
+  aspectRatio: number
   index: number
   onClick: () => void
 }) {
@@ -438,6 +445,7 @@ function PhotoTile({
         'relative break-inside-avoid overflow-hidden rounded-2xl select-none cursor-pointer',
         'border border-[#fcd34d]/10 transition-transform duration-300 hover:scale-[1.02]'
       )}
+      style={{ aspectRatio }}
     >
       <img
         src={thumbnailUrl || url}
@@ -445,7 +453,7 @@ function PhotoTile({
         alt={`Ảnh ${index + 1}`}
         loading="lazy"
         decoding="async"
-        className="w-full h-auto object-cover pointer-events-none"
+        className="w-full h-full object-contain pointer-events-none"
       />
     </div>
   )
