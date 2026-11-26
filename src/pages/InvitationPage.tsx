@@ -18,6 +18,7 @@ export function InvitationPage() {
   const { slug } = useParams<{ slug?: string }>()
   const guestIdentifier = slug || searchParams.get('id') || searchParams.get('to')
   const language: InvitationLanguage = searchParams.get('lang') === 'en' ? 'en' : 'vi'
+  const autoScrollSpeed = Number(searchParams.get('autoscroll'))
   
   const getGuestById = useGuestStore(state => state.getGuestById)
   const confirmAttendance = useGuestStore(state => state.confirmAttendance)
@@ -173,6 +174,50 @@ export function InvitationPage() {
   const hasMealInvite = Boolean(config.mealInvite && allowMealInvite)
   const hasSectionsBelow = Boolean(allowWishes || hasPhotos || hasMealInvite)
   const isEnglish = language === 'en'
+
+  useEffect(() => {
+    if (!isOpened || !Number.isFinite(autoScrollSpeed) || autoScrollSpeed <= 0 || !hasSectionsBelow) return
+
+    let frame = 0
+    let stopped = false
+    let previousTime = 0
+    let position = window.scrollY
+
+    const stop = () => {
+      stopped = true
+      window.clearTimeout(startTimer)
+      window.cancelAnimationFrame(frame)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' '].includes(event.key)) stop()
+    }
+    const scroll = (time: number) => {
+      if (stopped) return
+      if (previousTime) position += Math.min(time - previousTime, 50) * autoScrollSpeed / 1000
+      previousTime = time
+      const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
+      position = Math.min(position, maxScroll)
+      window.scrollTo(0, position)
+      if (position < maxScroll) frame = window.requestAnimationFrame(scroll)
+    }
+    // Let the cover finish opening before the page starts moving.
+    const startTimer = window.setTimeout(() => {
+      position = window.scrollY
+      frame = window.requestAnimationFrame(scroll)
+    }, 1400)
+
+    window.addEventListener('pointerdown', stop, { passive: true })
+    window.addEventListener('touchstart', stop, { passive: true })
+    window.addEventListener('wheel', stop, { passive: true })
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      stop()
+      window.removeEventListener('pointerdown', stop)
+      window.removeEventListener('touchstart', stop)
+      window.removeEventListener('wheel', stop)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [isOpened, autoScrollSpeed, hasSectionsBelow])
 
   return (
     <div 

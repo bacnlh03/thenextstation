@@ -41,7 +41,11 @@ export default function handler(req: Request, res: Response) {
   const protocol = host.startsWith('localhost') ? 'http' : 'https'
   const previewParams = new URLSearchParams({ lang: language })
   const invitationUrl = `${protocol}://${host}/to/${encodeURIComponent(slug)}?${previewParams.toString()}`
-  const appUrl = `/invitation?id=${encodeURIComponent(slug)}&lang=${language}`
+  const appParams = new URLSearchParams({ id: slug, lang: language })
+  const autoScroll = first(req.query?.autoscroll)
+  const autoScrollSpeed = Number(autoScroll)
+  if (Number.isFinite(autoScrollSpeed) && autoScrollSpeed > 0) appParams.set('autoscroll', autoScroll)
+  const appUrl = `/invitation?${appParams.toString()}`
   const safeInvitationUrl = escapeHtml(invitationUrl)
   const safeAppUrl = escapeHtml(appUrl)
 

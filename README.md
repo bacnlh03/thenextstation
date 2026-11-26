@@ -1,5 +1,12 @@
 # React + TypeScript + Vite
 
+## Tự cuộn thiệp mời
+
+Thêm `autoscroll` với tốc độ tính bằng pixel/giây vào URL để trang tự cuộn sau khi mở thiệp, ví dụ
+`/to/ten-khach?autoscroll=30` hoặc `/invitation?id=ten-khach&autoscroll=30`.
+Giá trị phải là số dương; bỏ tham số hoặc dùng `autoscroll=0` để tắt tự cuộn.
+Chạm, vuốt, dùng chuột hoặc phím điều hướng sẽ dừng tự cuộn.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
