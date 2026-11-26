@@ -136,10 +136,21 @@ export function InvitationPage() {
     setIsPlaying(true)
   }
 
+  const [hasScrolled, setHasScrolled] = useState(false)
+
   const handleOpen = () => {
     setIsOpened(true)
     startMusic()
   }
+
+  useEffect(() => {
+    if (!isOpened || hasScrolled) return
+    const onScroll = () => {
+      if (window.scrollY > 60) setHasScrolled(true)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [isOpened, hasScrolled])
 
   const handleConfirm = async () => {
     if (isConfirmed === 2) return
@@ -242,11 +253,11 @@ export function InvitationPage() {
           />
         </div>
 
-        {/* Scroll hint moves with the card section. */}
+        {/* Scroll hint fades after the user scrolls. */}
         {hasSectionsBelow && (
           <div className={clsx(
             'absolute bottom-3 md:bottom-7 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 transition-all duration-1000 z-20 cursor-pointer',
-            isOpened ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            isOpened && !hasScrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'
           )}
           onClick={() => {
             window.scrollTo({ top: window.innerHeight * 0.8, behavior: 'smooth' })
