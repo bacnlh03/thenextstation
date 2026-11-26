@@ -397,14 +397,16 @@ function InvitationWrapper({ config, guest, isConfirmed, onConfirm, onOpen, lang
                   className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
                   style={{ width, height }}
                 >
-                  <InvitationRenderer 
-                      config={config} 
-                      guest={guest} 
-                      isConfirmed={isConfirmed}
-                      onConfirm={onConfirm}
-                      language={language}
-                      scale={scale}
-                  />
+                  <div className="w-full h-full overflow-hidden">
+                    <InvitationRenderer
+                        config={config}
+                        guest={guest}
+                        isConfirmed={isConfirmed}
+                        onConfirm={onConfirm}
+                        language={language}
+                        scale={scale}
+                    />
+                  </div>
                   <BookCoverReveal scale={scale} onOpen={onOpen} language={language} />
                 </div>
              </div>

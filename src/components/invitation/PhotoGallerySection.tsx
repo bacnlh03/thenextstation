@@ -388,8 +388,6 @@ function CollagePhotoCard({
         width: photo.width,
         transform: `rotate(${photo.rotation}deg)`,
         zIndex: photo.zIndex || index + 1,
-        contentVisibility: 'auto',
-        containIntrinsicSize: '220px',
       }}
     >
       <div
